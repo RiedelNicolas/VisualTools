@@ -1,18 +1,10 @@
-import { ffmpegManager } from '../../core/ffmpeg-manager.js';
-import { stateManager } from '../../core/state-manager.js';
-import { analyzeImages, calculateCommonHeight } from '../../utils/image-analyzer.js';
-import { MESSAGES } from '../../config.js';
+import { ffmpegManager } from '../../core/ffmpeg-manager.ts';
+import { stateManager } from '../../core/state-manager.ts';
+import { analyzeImages, calculateCommonHeight } from '../../utils/image-analyzer.ts';
+import { MESSAGES } from '../../config.ts';
 
-/**
- * Comparison processor for combining two images side-by-side
- */
 export class ComparisonProcessor {
-  /**
-   * Generate side-by-side comparison image
-   * @param {File[]} files - Two image files
-   * @returns {Promise<Uint8Array>} PNG image data
-   */
-  async process(files) {
+  async process(files: File[]): Promise<Uint8Array> {
     if (files.length !== 2) {
       throw new Error('Exactly 2 images required');
     }
@@ -23,7 +15,6 @@ export class ComparisonProcessor {
       progress: 10
     });
 
-    // Analyze images to get dimensions
     const { dimensions } = await analyzeImages(files);
     const commonHeight = calculateCommonHeight(dimensions);
 
@@ -32,7 +23,6 @@ export class ComparisonProcessor {
       progress: 30
     });
 
-    // Initialize FFmpeg if needed
     const ffmpegReady = await ffmpegManager.initialize();
     if (!ffmpegReady) {
       throw new Error(MESSAGES.ERROR_FFMPEG_LOAD);
@@ -41,11 +31,13 @@ export class ComparisonProcessor {
     stateManager.setState({ progress: 50 });
 
     try {
-      // Write input files to FFmpeg
-      const inputFiles = [];
+      const inputFiles: string[] = [];
       for (let i = 0; i < files.length; i++) {
-        const filename = `input${i}.${this.getExtension(files[i])}`;
-        await ffmpegManager.writeFile(filename, files[i]);
+        const file = files[i];
+        if (!file) continue;
+        
+        const filename = `input${i}.${this.getExtension(file)}`;
+        await ffmpegManager.writeFile(filename, file);
         inputFiles.push(filename);
       }
 
@@ -53,17 +45,21 @@ export class ComparisonProcessor {
 
       const outputFile = 'comparison.png';
 
-      // Build FFmpeg command for side-by-side comparison
-      // Scale both images to same height, preserving aspect ratio
       const filterComplex = 
         `[0:v]scale=-1:${commonHeight}[left];` +
         `[1:v]scale=-1:${commonHeight}[right];` +
         `[left][right]hstack=inputs=2[outv]`;
 
-      // Execute FFmpeg
+      const input0 = inputFiles[0];
+      const input1 = inputFiles[1];
+      
+      if (!input0 || !input1) {
+        throw new Error('Failed to process input files');
+      }
+
       await ffmpegManager.execute([
-        '-i', inputFiles[0],
-        '-i', inputFiles[1],
+        '-i', input0,
+        '-i', input1,
         '-filter_complex', filterComplex,
         '-map', '[outv]',
         '-y',
@@ -72,10 +68,8 @@ export class ComparisonProcessor {
 
       stateManager.setState({ progress: 90 });
 
-      // Read output
       const result = await ffmpegManager.readFile(outputFile);
 
-      // Cleanup
       await ffmpegManager.cleanup([...inputFiles, outputFile]);
 
       stateManager.setState({
@@ -93,12 +87,8 @@ export class ComparisonProcessor {
     }
   }
 
-  /**
-   * Get file extension
-   * @param {File} file 
-   * @returns {string}
-   */
-  getExtension(file) {
-    return file.name.split('.').pop().toLowerCase();
+  private getExtension(file: File): string {
+    const parts = file.name.split('.');
+    return parts.pop()?.toLowerCase() ?? 'jpg';
   }
 }

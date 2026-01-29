@@ -1,20 +1,19 @@
-import { eventBus } from '../core/event-bus.js';
-import { validateFile } from '../utils/validation.js';
-import { readFileAsDataURL } from '../utils/file-handler.js';
-import { CONFIG } from '../config.js';
+import { eventBus } from '../core/event-bus.ts';
+import { validateFile } from '../utils/validation.ts';
+import { readFileAsDataURL } from '../utils/file-handler.ts';
+import { CONFIG } from '../config.ts';
+import type { FileUploaderOptions } from '../types.ts';
 
-/**
- * File uploader component with drag-and-drop support
- */
 export class FileUploader {
-  /**
-   * @param {HTMLElement} container - Container element
-   * @param {Object} options - Configuration options
-   * @param {number} [options.maxFiles=20] - Maximum number of files
-   * @param {boolean} [options.multiple=true] - Allow multiple files
-   * @param {string} [options.eventName='files-changed'] - Event name for file changes
-   */
-  constructor(container, options = {}) {
+  private container: HTMLElement;
+  private options: Required<FileUploaderOptions>;
+  private files: File[];
+  private uploadZone!: HTMLElement;
+  private fileInput!: HTMLInputElement;
+  private previewGrid!: HTMLElement;
+  private errorEl!: HTMLElement;
+
+  constructor(container: HTMLElement, options: FileUploaderOptions = {}) {
     this.container = container;
     this.options = {
       maxFiles: options.maxFiles ?? CONFIG.MAX_FILES_SLIDESHOW,
@@ -26,7 +25,7 @@ export class FileUploader {
     this.attachEvents();
   }
 
-  render() {
+  private render(): void {
     this.container.innerHTML = `
       <div class="file-uploader">
         <div class="upload-zone" tabindex="0" role="button" aria-label="Upload images">
@@ -44,29 +43,39 @@ export class FileUploader {
       </div>
     `;
 
-    this.uploadZone = this.container.querySelector('.upload-zone');
-    this.fileInput = this.container.querySelector('.file-input');
-    this.previewGrid = this.container.querySelector('.file-preview-grid');
-    this.errorEl = this.container.querySelector('.upload-error');
+    const uploadZone = this.container.querySelector('.upload-zone');
+    const fileInput = this.container.querySelector('.file-input');
+    const previewGrid = this.container.querySelector('.file-preview-grid');
+    const errorEl = this.container.querySelector('.upload-error');
+
+    if (!uploadZone || !fileInput || !previewGrid || !errorEl) {
+      throw new Error('Failed to initialize file uploader elements');
+    }
+
+    this.uploadZone = uploadZone as HTMLElement;
+    this.fileInput = fileInput as HTMLInputElement;
+    this.previewGrid = previewGrid as HTMLElement;
+    this.errorEl = errorEl as HTMLElement;
   }
 
-  attachEvents() {
-    // Click to upload
+  private attachEvents(): void {
     this.uploadZone.addEventListener('click', () => this.fileInput.click());
     
-    // Keyboard accessibility
-    this.uploadZone.addEventListener('keydown', (e) => {
+    this.uploadZone.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         this.fileInput.click();
       }
     });
 
-    // File input change
-    this.fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+    this.fileInput.addEventListener('change', (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      if (target.files) {
+        this.handleFiles(target.files);
+      }
+    });
 
-    // Drag and drop
-    this.uploadZone.addEventListener('dragover', (e) => {
+    this.uploadZone.addEventListener('dragover', (e: DragEvent) => {
       e.preventDefault();
       this.uploadZone.classList.add('drag-over');
     });
@@ -75,18 +84,19 @@ export class FileUploader {
       this.uploadZone.classList.remove('drag-over');
     });
 
-    this.uploadZone.addEventListener('drop', (e) => {
+    this.uploadZone.addEventListener('drop', (e: DragEvent) => {
       e.preventDefault();
       this.uploadZone.classList.remove('drag-over');
-      this.handleFiles(e.dataTransfer.files);
+      if (e.dataTransfer?.files) {
+        this.handleFiles(e.dataTransfer.files);
+      }
     });
   }
 
-  async handleFiles(fileList) {
+  private async handleFiles(fileList: FileList): Promise<void> {
     this.clearError();
     const newFiles = Array.from(fileList);
 
-    // Validate each file
     for (const file of newFiles) {
       const result = validateFile(file);
       if (!result.valid) {
@@ -95,30 +105,30 @@ export class FileUploader {
       }
     }
 
-    // Check max files limit
     const totalFiles = this.files.length + newFiles.length;
     if (totalFiles > this.options.maxFiles) {
       this.showError(`Maximum ${this.options.maxFiles} files allowed`);
       return;
     }
 
-    // Add files
     this.files = [...this.files, ...newFiles];
     await this.updatePreview();
     this.emitChange();
   }
 
-  async updatePreview() {
+  private async updatePreview(): Promise<void> {
     this.previewGrid.innerHTML = '';
 
     for (let i = 0; i < this.files.length; i++) {
       const file = this.files[i];
+      if (!file) continue;
+      
       const dataUrl = await readFileAsDataURL(file);
       
       const preview = document.createElement('div');
       preview.className = 'file-preview-item';
       preview.draggable = true;
-      preview.dataset.index = i;
+      preview.dataset['index'] = String(i);
       
       const img = document.createElement('img');
       img.src = dataUrl;
@@ -132,95 +142,106 @@ export class FileUploader {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
       removeBtn.setAttribute('aria-label', `Remove ${file.name}`);
-      removeBtn.dataset.index = i;
+      removeBtn.dataset['index'] = String(i);
       removeBtn.textContent = '×';
       
       preview.appendChild(img);
       preview.appendChild(fileName);
       preview.appendChild(removeBtn);
 
-      // Remove button
-      removeBtn.addEventListener('click', (e) => {
+      removeBtn.addEventListener('click', (e: Event) => {
         e.stopPropagation();
-        this.removeFile(parseInt(e.target.dataset.index));
+        const target = e.target as HTMLElement;
+        const index = target.dataset['index'];
+        if (index !== undefined) {
+          this.removeFile(parseInt(index));
+        }
       });
 
-      // Drag and drop reordering
-      preview.addEventListener('dragstart', (e) => this.handleDragStart(e));
-      preview.addEventListener('dragover', (e) => this.handleDragOver(e));
-      preview.addEventListener('drop', (e) => this.handleDrop(e));
+      preview.addEventListener('dragstart', (e: DragEvent) => this.handleDragStart(e));
+      preview.addEventListener('dragover', (e: DragEvent) => this.handleDragOver(e));
+      preview.addEventListener('drop', (e: DragEvent) => this.handleDrop(e));
       preview.addEventListener('dragend', () => this.handleDragEnd());
 
       this.previewGrid.appendChild(preview);
     }
   }
 
-  handleDragStart(e) {
-    e.target.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', e.target.dataset.index);
+  private handleDragStart(e: DragEvent): void {
+    const target = e.target as HTMLElement;
+    target.classList.add('dragging');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', target.dataset['index'] || '');
+    }
   }
 
-  handleDragOver(e) {
+  private handleDragOver(e: DragEvent): void {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
     
-    const target = e.target.closest('.file-preview-item');
+    const target = (e.target as HTMLElement).closest('.file-preview-item') as HTMLElement;
     if (target && !target.classList.contains('dragging')) {
       target.classList.add('drag-target');
     }
   }
 
-  handleDrop(e) {
+  private handleDrop(e: DragEvent): void {
     e.preventDefault();
-    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-    const target = e.target.closest('.file-preview-item');
+    const fromIndexStr = e.dataTransfer?.getData('text/plain');
+    if (!fromIndexStr) return;
+    
+    const fromIndex = parseInt(fromIndexStr);
+    const target = (e.target as HTMLElement).closest('.file-preview-item') as HTMLElement;
     
     if (target) {
       target.classList.remove('drag-target');
-      const toIndex = parseInt(target.dataset.index);
+      const toIndex = parseInt(target.dataset['index'] || '0');
       
       if (fromIndex !== toIndex) {
-        // Reorder files
         const [movedFile] = this.files.splice(fromIndex, 1);
-        this.files.splice(toIndex, 0, movedFile);
-        this.updatePreview();
-        this.emitChange();
+        if (movedFile) {
+          this.files.splice(toIndex, 0, movedFile);
+          this.updatePreview();
+          this.emitChange();
+        }
       }
     }
   }
 
-  handleDragEnd() {
+  private handleDragEnd(): void {
     this.previewGrid.querySelectorAll('.file-preview-item').forEach(item => {
       item.classList.remove('dragging', 'drag-target');
     });
   }
 
-  removeFile(index) {
+  private removeFile(index: number): void {
     this.files.splice(index, 1);
     this.updatePreview();
     this.emitChange();
   }
 
-  showError(message) {
+  private showError(message: string): void {
     this.errorEl.textContent = message;
     this.errorEl.classList.add('visible');
   }
 
-  clearError() {
+  private clearError(): void {
     this.errorEl.textContent = '';
     this.errorEl.classList.remove('visible');
   }
 
-  emitChange() {
-    eventBus.emit(this.options.eventName, this.files);
+  private emitChange(): void {
+    eventBus.emit<File[]>(this.options.eventName, this.files);
   }
 
-  getFiles() {
+  getFiles(): File[] {
     return this.files;
   }
 
-  clear() {
+  clear(): void {
     this.files = [];
     this.previewGrid.innerHTML = '';
     this.fileInput.value = '';
@@ -228,7 +249,7 @@ export class FileUploader {
     this.emitChange();
   }
 
-  destroy() {
+  destroy(): void {
     this.container.innerHTML = '';
   }
 }

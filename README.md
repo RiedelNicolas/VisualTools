@@ -23,7 +23,7 @@ Visit [https://riedelnicolas.github.io/VisualTools/](https://riedelnicolas.githu
 
 ## Technology Stack
 
-- **Vanilla JavaScript** (ES6 modules)
+- **TypeScript** (ES6 modules with strict type checking)
 - **CSS** with CSS Variables for theming
 - **FFmpeg.wasm** for image/video processing
 - **Vite** for development and building

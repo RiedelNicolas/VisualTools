@@ -1,20 +1,22 @@
-import { stateManager } from '../core/state-manager.js';
+import { stateManager } from '../core/state-manager.ts';
+import type { UnsubscribeFunction } from '../types.ts';
 
-/**
- * Progress bar component for displaying operation progress
- */
 export class ProgressBar {
-  /**
-   * @param {HTMLElement} container - Container element
-   */
-  constructor(container) {
+  private container: HTMLElement;
+  private unsubscribers: UnsubscribeFunction[];
+  private progressContainer!: HTMLElement;
+  private messageEl!: HTMLElement;
+  private fillEl!: HTMLElement;
+  private percentageEl!: HTMLElement;
+
+  constructor(container: HTMLElement) {
     this.container = container;
     this.unsubscribers = [];
     this.render();
     this.subscribe();
   }
 
-  render() {
+  private render(): void {
     this.container.innerHTML = `
       <div class="progress-container hidden">
         <div class="progress-message"></div>
@@ -25,34 +27,39 @@ export class ProgressBar {
       </div>
     `;
 
-    this.progressContainer = this.container.querySelector('.progress-container');
-    this.messageEl = this.container.querySelector('.progress-message');
-    this.fillEl = this.container.querySelector('.progress-fill');
-    this.percentageEl = this.container.querySelector('.progress-percentage');
+    const container = this.container.querySelector('.progress-container');
+    const message = this.container.querySelector('.progress-message');
+    const fill = this.container.querySelector('.progress-fill');
+    const percentage = this.container.querySelector('.progress-percentage');
+
+    if (!container || !message || !fill || !percentage) {
+      throw new Error('Failed to initialize progress bar elements');
+    }
+
+    this.progressContainer = container as HTMLElement;
+    this.messageEl = message as HTMLElement;
+    this.fillEl = fill as HTMLElement;
+    this.percentageEl = percentage as HTMLElement;
   }
 
-  subscribe() {
-    // Subscribe to progress updates
+  private subscribe(): void {
     this.unsubscribers.push(
       stateManager.subscribe('progress', (progress) => {
-        this.updateProgress(progress);
+        this.updateProgress(progress as number);
       })
     );
 
-    // Subscribe to message updates
     this.unsubscribers.push(
       stateManager.subscribe('progressMessage', (message) => {
-        this.updateMessage(message);
+        this.updateMessage(message as string);
       })
     );
 
-    // Subscribe to processing state
     this.unsubscribers.push(
       stateManager.subscribe('processing', (processing) => {
         if (processing) {
           this.show();
         } else {
-          // Keep showing briefly after completion
           setTimeout(() => {
             if (!stateManager.getState('processing')) {
               this.hide();
@@ -62,7 +69,6 @@ export class ProgressBar {
       })
     );
 
-    // Also show when FFmpeg is loading
     this.unsubscribers.push(
       stateManager.subscribe('ffmpegLoading', (loading) => {
         if (loading) {
@@ -72,12 +78,11 @@ export class ProgressBar {
     );
   }
 
-  updateProgress(progress) {
+  private updateProgress(progress: number): void {
     const clampedProgress = Math.min(100, Math.max(0, progress));
     this.fillEl.style.width = `${clampedProgress}%`;
     this.percentageEl.textContent = `${clampedProgress}%`;
     
-    // Add completion class when done
     if (clampedProgress >= 100) {
       this.fillEl.classList.add('complete');
     } else {
@@ -85,22 +90,21 @@ export class ProgressBar {
     }
   }
 
-  updateMessage(message) {
+  private updateMessage(message: string): void {
     this.messageEl.textContent = message;
   }
 
-  show() {
+  private show(): void {
     this.progressContainer.classList.remove('hidden');
   }
 
-  hide() {
+  private hide(): void {
     this.progressContainer.classList.add('hidden');
-    // Reset state
     this.updateProgress(0);
     this.updateMessage('');
   }
 
-  setIndeterminate(isIndeterminate) {
+  setIndeterminate(isIndeterminate: boolean): void {
     if (isIndeterminate) {
       this.fillEl.classList.add('indeterminate');
       this.percentageEl.textContent = '';
@@ -109,7 +113,7 @@ export class ProgressBar {
     }
   }
 
-  destroy() {
+  destroy(): void {
     this.unsubscribers.forEach(unsub => unsub());
     this.container.innerHTML = '';
   }

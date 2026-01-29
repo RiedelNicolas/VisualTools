@@ -1,17 +1,15 @@
-import { downloadBlob, generateFilename } from '../utils/file-handler.js';
+import { downloadBlob, generateFilename } from '../utils/file-handler.ts';
+import type { DownloadButtonOptions } from '../types.ts';
 
-/**
- * Download button component for downloading processed results
- */
 export class DownloadButton {
-  /**
-   * @param {HTMLElement} container - Container element
-   * @param {Object} options - Configuration options
-   * @param {string} [options.prefix='output'] - Filename prefix
-   * @param {string} [options.extension='.png'] - File extension
-   * @param {string} [options.mimeType='image/png'] - MIME type
-   */
-  constructor(container, options = {}) {
+  private container: HTMLElement;
+  private options: Required<DownloadButtonOptions>;
+  private currentOptions?: Required<DownloadButtonOptions>;
+  private blob: Blob | null;
+  private objectUrl: string | null;
+  private button!: HTMLButtonElement;
+
+  constructor(container: HTMLElement, options: DownloadButtonOptions = {}) {
     this.container = container;
     this.options = {
       prefix: options.prefix ?? 'output',
@@ -24,7 +22,7 @@ export class DownloadButton {
     this.attachEvents();
   }
 
-  render() {
+  private render(): void {
     this.container.innerHTML = `
       <button class="download-btn primary-btn hidden" disabled>
         <span class="btn-icon">⬇️</span>
@@ -32,28 +30,26 @@ export class DownloadButton {
       </button>
     `;
 
-    this.button = this.container.querySelector('.download-btn');
+    const button = this.container.querySelector('.download-btn');
+    if (!button) {
+      throw new Error('Failed to initialize download button');
+    }
+    this.button = button as HTMLButtonElement;
   }
 
-  attachEvents() {
+  private attachEvents(): void {
     this.button.addEventListener('click', () => this.download());
   }
 
-  /**
-   * Set the result data
-   * @param {Blob|Uint8Array} data - Result data
-   * @param {Object} [customOptions] - Override options
-   */
-  setResult(data, customOptions = {}) {
-    // Clean up previous URL
+  setResult(data: Blob | Uint8Array, customOptions: Partial<DownloadButtonOptions> = {}): void {
     this.cleanup();
 
-    // Merge options with custom overrides and store for download
-    this.currentOptions = { ...this.options, ...customOptions };
+    this.currentOptions = { ...this.options, ...customOptions } as Required<DownloadButtonOptions>;
 
-    // Convert Uint8Array to Blob if needed
     if (data instanceof Uint8Array) {
-      this.blob = new Blob([data], { type: this.currentOptions.mimeType });
+      // Note: TypeScript requires this because Uint8Array.buffer could be SharedArrayBuffer,
+      // but Blob constructor only accepts ArrayBuffer. Creating a new Uint8Array ensures compatibility.
+      this.blob = new Blob([new Uint8Array(data)], { type: this.currentOptions.mimeType });
     } else {
       this.blob = data;
     }
@@ -63,7 +59,7 @@ export class DownloadButton {
     this.button.classList.remove('hidden');
   }
 
-  download() {
+  private download(): void {
     if (!this.blob) return;
 
     const opts = this.currentOptions || this.options;
@@ -71,7 +67,7 @@ export class DownloadButton {
     downloadBlob(this.blob, filename);
   }
 
-  cleanup() {
+  private cleanup(): void {
     if (this.objectUrl) {
       URL.revokeObjectURL(this.objectUrl);
       this.objectUrl = null;
@@ -79,20 +75,20 @@ export class DownloadButton {
     this.blob = null;
   }
 
-  hide() {
+  hide(): void {
     this.button.classList.add('hidden');
     this.button.disabled = true;
     this.cleanup();
   }
 
-  show() {
+  show(): void {
     if (this.blob) {
       this.button.classList.remove('hidden');
       this.button.disabled = false;
     }
   }
 
-  destroy() {
+  destroy(): void {
     this.cleanup();
     this.container.innerHTML = '';
   }

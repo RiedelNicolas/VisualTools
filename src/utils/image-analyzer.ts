@@ -1,9 +1,6 @@
-/**
- * Analyze image dimensions
- * @param {File} file - Image file
- * @returns {Promise<{ width: number, height: number }>}
- */
-export function getImageDimensions(file) {
+import type { ImageDimensions, ImageAnalysisResult } from '../types.ts';
+
+export function getImageDimensions(file: File): Promise<ImageDimensions> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -25,12 +22,7 @@ export function getImageDimensions(file) {
   });
 }
 
-/**
- * Analyze multiple images and find max dimensions
- * @param {File[]} files - Image files
- * @returns {Promise<{ maxWidth: number, maxHeight: number, dimensions: Array<{ width: number, height: number }> }>}
- */
-export async function analyzeImages(files) {
+export async function analyzeImages(files: File[]): Promise<ImageAnalysisResult> {
   const dimensions = await Promise.all(files.map(file => getImageDimensions(file)));
   
   const maxWidth = Math.max(...dimensions.map(d => d.width));
@@ -39,12 +31,6 @@ export async function analyzeImages(files) {
   return { maxWidth, maxHeight, dimensions };
 }
 
-/**
- * Calculate the common height for side-by-side comparison
- * @param {Array<{ width: number, height: number }>} dimensions - Image dimensions
- * @returns {number} Common height
- */
-export function calculateCommonHeight(dimensions) {
-  // Use the maximum height
+export function calculateCommonHeight(dimensions: ImageDimensions[]): number {
   return Math.max(...dimensions.map(d => d.height));
 }

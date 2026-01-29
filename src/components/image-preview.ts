@@ -1,32 +1,29 @@
-import { readFileAsDataURL } from '../utils/file-handler.js';
+import { readFileAsDataURL } from '../utils/file-handler.ts';
 
-/**
- * Image preview component for displaying uploaded images
- */
 export class ImagePreview {
-  /**
-   * @param {HTMLElement} container - Container element
-   */
-  constructor(container) {
+  private container: HTMLElement;
+  private previewContainer!: HTMLElement;
+
+  constructor(container: HTMLElement) {
     this.container = container;
     this.render();
   }
 
-  render() {
+  private render(): void {
     this.container.innerHTML = `
       <div class="image-preview">
         <div class="preview-images"></div>
       </div>
     `;
 
-    this.previewContainer = this.container.querySelector('.preview-images');
+    const preview = this.container.querySelector('.preview-images');
+    if (!preview) {
+      throw new Error('Failed to initialize preview container');
+    }
+    this.previewContainer = preview as HTMLElement;
   }
 
-  /**
-   * Update preview with new files
-   * @param {File[]} files - Image files to preview
-   */
-  async update(files) {
+  async update(files: File[]): Promise<void> {
     this.previewContainer.innerHTML = '';
 
     if (files.length === 0) {
@@ -43,16 +40,14 @@ export class ImagePreview {
     }
   }
 
-  /**
-   * Show comparison preview (side by side)
-   * @param {File[]} files - Two image files
-   */
-  async showComparison(files) {
+  async showComparison(files: File[]): Promise<void> {
     this.previewContainer.innerHTML = '';
     this.previewContainer.classList.add('comparison-preview');
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (!file) continue;
+      
       const dataUrl = await readFileAsDataURL(file);
       
       const wrapper = document.createElement('div');
@@ -73,12 +68,12 @@ export class ImagePreview {
     }
   }
 
-  clear() {
+  clear(): void {
     this.previewContainer.innerHTML = '';
     this.previewContainer.classList.remove('comparison-preview');
   }
 
-  destroy() {
+  destroy(): void {
     this.container.innerHTML = '';
   }
 }
