@@ -9,6 +9,8 @@ export class ComparisonProcessor {
       throw new Error('Exactly 2 images required');
     }
 
+    let progressSimulation: number | undefined;
+
     stateManager.setState({
       processing: true,
       progressMessage: MESSAGES.ANALYZING_IMAGES,
@@ -57,6 +59,15 @@ export class ComparisonProcessor {
         throw new Error('Failed to process input files');
       }
 
+      // Start a progress simulation as fallback in case FFmpeg progress events don't fire
+      progressSimulation = setInterval(() => {
+        const currentProgress = stateManager.getState('progress') as number;
+        if (currentProgress < 85) {
+          // Slowly increment progress from 60% to 85% over time (1% per second)
+          stateManager.setState({ progress: Math.min(85, currentProgress + 1) });
+        }
+      }, 1000) as unknown as number;
+
       await ffmpegManager.execute([
         '-i', input0,
         '-i', input1,
@@ -83,6 +94,9 @@ export class ComparisonProcessor {
       console.error('Comparison processing error:', error);
       throw new Error(MESSAGES.ERROR_PROCESSING);
     } finally {
+      if (progressSimulation !== undefined) {
+        clearInterval(progressSimulation);
+      }
       stateManager.setState({ processing: false });
     }
   }
