@@ -80,6 +80,13 @@ export class ProgressBar {
 
   private updateProgress(progress: number): void {
     const clampedProgress = Math.min(100, Math.max(0, progress));
+    
+    // Only update if progress increases (monotonic) to avoid race conditions
+    const currentProgress = parseFloat(this.percentageEl.textContent || '0');
+    if (clampedProgress < currentProgress) {
+      return;
+    }
+    
     this.fillEl.style.width = `${clampedProgress}%`;
     this.percentageEl.textContent = `${clampedProgress}%`;
     

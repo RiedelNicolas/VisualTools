@@ -58,13 +58,13 @@ export class ComparisonProcessor {
       }
 
       // Start a progress simulation as fallback in case FFmpeg progress events don't fire
-      let progressSimulation: NodeJS.Timeout | null = setInterval(() => {
+      const progressSimulation = setInterval(() => {
         const currentProgress = stateManager.getState('progress') as number;
         if (currentProgress < 85) {
-          // Slowly increment progress from 60% to 85% over time
-          stateManager.setState({ progress: Math.min(85, currentProgress + 2) });
+          // Slowly increment progress from 60% to 85% over time (1% per second)
+          stateManager.setState({ progress: Math.min(85, currentProgress + 1) });
         }
-      }, 500);
+      }, 1000);
 
       try {
         await ffmpegManager.execute([
@@ -76,10 +76,7 @@ export class ComparisonProcessor {
           outputFile
         ]);
       } finally {
-        if (progressSimulation) {
-          clearInterval(progressSimulation);
-          progressSimulation = null;
-        }
+        clearInterval(progressSimulation);
       }
 
       stateManager.setState({ progress: 90 });
