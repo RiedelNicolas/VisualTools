@@ -14,8 +14,7 @@ Combine two images horizontally for easy comparison. Great for:
 Create MP4 videos with smooth crossfade transitions from multiple images. Features:
 - Upload up to 20 images
 - Drag to reorder images
-- 1.5s display time per image
-- 0.5s crossfade transitions
+- crossfade transitions
 - Preview before download
 
 ## Live Demo
