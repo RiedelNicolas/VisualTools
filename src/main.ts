@@ -2,12 +2,12 @@ import { stateManager } from './core/state-manager.ts';
 import { eventBus } from './core/event-bus.ts';
 import { ComparisonController } from './modules/comparison/comparison-controller.ts';
 import { SlideshowController } from './modules/slideshow/slideshow-controller.ts';
-import { ImageRedactorController } from './modules/image-redactor/image-redactor-controller.ts';
+import { ImageObfuscatorController } from './modules/image-obfuscator/image-obfuscator-controller.ts';
 import './assets/css/main.css';
 import './assets/css/components.css';
 import './assets/css/animations.css';
 
-type ToolController = ComparisonController | SlideshowController | ImageRedactorController;
+type ToolController = ComparisonController | SlideshowController | ImageObfuscatorController;
 
 class VisualToolsApp {
   private currentTool: string | null;
@@ -103,15 +103,15 @@ class VisualToolsApp {
     });
 
     this.currentTool = toolName;
-    stateManager.setState({ currentTool: toolName as 'comparison' | 'slideshow' | 'image-redactor' });
+    stateManager.setState({ currentTool: toolName as 'comparison' | 'slideshow' | 'image-obfuscator' });
     stateManager.reset();
 
     if (toolName === 'comparison') {
       this.toolController = new ComparisonController(this.toolContainer);
     } else if (toolName === 'slideshow') {
       this.toolController = new SlideshowController(this.toolContainer);
-    } else if (toolName === 'image-redactor') {
-      this.toolController = new ImageRedactorController(this.toolContainer);
+    } else if (toolName === 'image-obfuscator') {
+      this.toolController = new ImageObfuscatorController(this.toolContainer);
     }
 
     eventBus.emit<string>('tool-changed', toolName);

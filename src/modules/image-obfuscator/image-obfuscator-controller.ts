@@ -2,7 +2,7 @@ import { eventBus } from '../../core/event-bus.ts';
 import { stateManager } from '../../core/state-manager.ts';
 import { FileUploader } from '../../components/file-uploader.ts';
 import { DownloadButton } from '../../components/download-button.ts';
-import { ImageRedactorProcessor, type RedactionRegion, type RedactionEffect } from './image-redactor-processor.ts';
+import { ImageObfuscatorProcessor, type RedactionRegion, type RedactionEffect } from './image-obfuscator-processor.ts';
 import type { UnsubscribeFunction } from '../../types.ts';
 
 interface Components {
@@ -10,9 +10,9 @@ interface Components {
   downloadBtn: DownloadButton;
 }
 
-export class ImageRedactorController {
+export class ImageObfuscatorController {
   private container: HTMLElement;
-  private processor: ImageRedactorProcessor;
+  private processor: ImageObfuscatorProcessor;
   private file: File | null;
   private unsubscribers: UnsubscribeFunction[];
   private components: Partial<Components>;
@@ -38,7 +38,7 @@ export class ImageRedactorController {
 
   constructor(container: HTMLElement) {
     this.container = container;
-    this.processor = new ImageRedactorProcessor();
+    this.processor = new ImageObfuscatorProcessor();
     this.file = null;
     this.unsubscribers = [];
     this.components = {};
@@ -49,9 +49,9 @@ export class ImageRedactorController {
 
   private render(): void {
     this.container.innerHTML = `
-      <div class="image-redactor-tool">
+      <div class="image-obfuscator-tool">
         <div class="tool-header">
-          <h2>Image Redactor</h2>
+          <h2>Image Obfuscator</h2>
           <p>Blur or pixelate sensitive information in your images</p>
         </div>
         
@@ -118,7 +118,7 @@ export class ImageRedactorController {
 
     if (!canvas || !canvasContainer || !effectSelector || !clearBtn || !undoBtn || 
         !processBtn || !resultSection || !resultImg || !errorEl) {
-      throw new Error('Failed to initialize image redactor controller elements');
+      throw new Error('Failed to initialize image obfuscator controller elements');
     }
 
     this.canvas = canvas as HTMLCanvasElement;

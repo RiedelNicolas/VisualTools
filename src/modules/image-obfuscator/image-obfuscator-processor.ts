@@ -1,5 +1,5 @@
 /**
- * Processor for applying redaction effects to images
+ * Processor for applying obfuscation effects to images
  */
 
 export interface RedactionRegion {
@@ -11,7 +11,7 @@ export interface RedactionRegion {
 
 export type RedactionEffect = 'blur' | 'pixelate';
 
-export class ImageRedactorProcessor {
+export class ImageObfuscatorProcessor {
   /**
    * Apply redaction effects to an image
    * @param imageFile The image file to process
