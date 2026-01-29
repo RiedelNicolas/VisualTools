@@ -94,6 +94,12 @@ export class ProgressBar {
     
     if (clampedProgress >= 100) {
       this.fillEl.classList.add('complete');
+      // Hide progress bar when it reaches 100% to show spinner instead
+      setTimeout(() => {
+        if (stateManager.getState('processing')) {
+          this.hide();
+        }
+      }, 500);
     } else {
       this.fillEl.classList.remove('complete');
     }
