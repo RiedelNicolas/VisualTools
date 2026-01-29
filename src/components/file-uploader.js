@@ -119,14 +119,28 @@ export class FileUploader {
       preview.className = 'file-preview-item';
       preview.draggable = true;
       preview.dataset.index = i;
-      preview.innerHTML = `
-        <img src="${dataUrl}" alt="${file.name}" draggable="false">
-        <span class="file-name">${file.name}</span>
-        <button class="remove-btn" aria-label="Remove ${file.name}" data-index="${i}">×</button>
-      `;
+      
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.alt = file.name;
+      img.draggable = false;
+      
+      const fileName = document.createElement('span');
+      fileName.className = 'file-name';
+      fileName.textContent = file.name;
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.setAttribute('aria-label', `Remove ${file.name}`);
+      removeBtn.dataset.index = i;
+      removeBtn.textContent = '×';
+      
+      preview.appendChild(img);
+      preview.appendChild(fileName);
+      preview.appendChild(removeBtn);
 
       // Remove button
-      preview.querySelector('.remove-btn').addEventListener('click', (e) => {
+      removeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.removeFile(parseInt(e.target.dataset.index));
       });

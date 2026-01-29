@@ -48,11 +48,12 @@ export class DownloadButton {
     // Clean up previous URL
     this.cleanup();
 
-    const options = { ...this.options, ...customOptions };
+    // Merge options with custom overrides and store for download
+    this.currentOptions = { ...this.options, ...customOptions };
 
     // Convert Uint8Array to Blob if needed
     if (data instanceof Uint8Array) {
-      this.blob = new Blob([data], { type: options.mimeType });
+      this.blob = new Blob([data], { type: this.currentOptions.mimeType });
     } else {
       this.blob = data;
     }
@@ -65,7 +66,8 @@ export class DownloadButton {
   download() {
     if (!this.blob) return;
 
-    const filename = generateFilename(this.options.prefix, this.options.extension);
+    const opts = this.currentOptions || this.options;
+    const filename = generateFilename(opts.prefix, opts.extension);
     downloadBlob(this.blob, filename);
   }
 

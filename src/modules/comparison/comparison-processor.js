@@ -99,7 +99,6 @@ export class ComparisonProcessor {
    * @returns {string}
    */
   getExtension(file) {
-    const ext = file.name.split('.').pop().toLowerCase();
-    return ext === 'jpg' ? 'jpeg' : ext;
+    return file.name.split('.').pop().toLowerCase();
   }
 }

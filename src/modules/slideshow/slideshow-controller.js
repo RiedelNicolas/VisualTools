@@ -175,11 +175,7 @@ export class SlideshowController {
     
     this.videoEl.src = this.videoObjectUrl;
     this.resultSection.classList.remove('hidden');
-    this.components.downloadBtn.setResult(data, {
-      prefix: 'slideshow',
-      extension: '.mp4',
-      mimeType: 'video/mp4'
-    });
+    this.components.downloadBtn.setResult(data);
     
     // Scroll to result
     this.resultSection.scrollIntoView({ behavior: 'smooth' });

@@ -57,10 +57,17 @@ export class ImagePreview {
       
       const wrapper = document.createElement('div');
       wrapper.className = 'comparison-image-wrapper';
-      wrapper.innerHTML = `
-        <img src="${dataUrl}" alt="${file.name}">
-        <span class="image-label">${i === 0 ? 'Left' : 'Right'}</span>
-      `;
+      
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.alt = file.name;
+      
+      const label = document.createElement('span');
+      label.className = 'image-label';
+      label.textContent = i === 0 ? 'Left' : 'Right';
+      
+      wrapper.appendChild(img);
+      wrapper.appendChild(label);
       
       this.previewContainer.appendChild(wrapper);
     }

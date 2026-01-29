@@ -131,8 +131,12 @@ class FFmpegManager {
     }
     try {
       await this.ffmpeg.deleteFile(filename);
-    } catch {
-      // File may not exist, ignore
+    } catch (error) {
+      // File may not exist in virtual filesystem - this is expected during cleanup
+      // Only log unexpected errors
+      if (error?.message && !error.message.includes('ENOENT')) {
+        console.warn(`[FFmpeg] Could not delete file ${filename}:`, error.message);
+      }
     }
   }
 

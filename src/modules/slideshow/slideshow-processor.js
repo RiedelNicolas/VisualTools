@@ -87,7 +87,7 @@ export class SlideshowProcessor {
       await ffmpegManager.execute([
         ...inputArgs,
         '-filter_complex', filterComplex,
-        '-map', `[${this.getFinalOutputLabel(inputFiles.length)}]`,
+        '-map', '[vfinal]',
         '-c:v', 'libx264',
         '-pix_fmt', 'yuv420p',
         '-preset', 'fast',
@@ -175,21 +175,8 @@ export class SlideshowProcessor {
     }
 
     return {
-      inputs: [],
       filterComplex: filters.join(';')
     };
-  }
-
-  /**
-   * Get the final output label for the filter complex
-   * @param {number} numImages - Number of images
-   * @returns {string} Output label
-   */
-  getFinalOutputLabel(numImages) {
-    if (numImages === 2) {
-      return 'vfinal';
-    }
-    return 'vfinal';
   }
 
   /**
@@ -198,7 +185,6 @@ export class SlideshowProcessor {
    * @returns {string}
    */
   getExtension(file) {
-    const ext = file.name.split('.').pop().toLowerCase();
-    return ext === 'jpg' ? 'jpeg' : ext;
+    return file.name.split('.').pop().toLowerCase();
   }
 }
