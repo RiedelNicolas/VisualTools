@@ -1,20 +1,33 @@
-import { eventBus } from '../../core/event-bus.js';
-import { stateManager } from '../../core/state-manager.js';
-import { FileUploader } from '../../components/file-uploader.js';
-import { ProgressBar } from '../../components/progress-bar.js';
-import { ImagePreview } from '../../components/image-preview.js';
-import { DownloadButton } from '../../components/download-button.js';
-import { ComparisonProcessor } from './comparison-processor.js';
-import { validateComparisonFiles } from '../../utils/validation.js';
+import { eventBus } from '../../core/event-bus.ts';
+import { stateManager } from '../../core/state-manager.ts';
+import { FileUploader } from '../../components/file-uploader.ts';
+import { ProgressBar } from '../../components/progress-bar.ts';
+import { ImagePreview } from '../../components/image-preview.ts';
+import { DownloadButton } from '../../components/download-button.ts';
+import { ComparisonProcessor } from './comparison-processor.ts';
+import { validateComparisonFiles } from '../../utils/validation.ts';
+import type { UnsubscribeFunction } from '../../types.ts';
 
-/**
- * Controller for the comparison tool
- */
+interface Components {
+  uploader: FileUploader;
+  preview: ImagePreview;
+  progressBar: ProgressBar;
+  downloadBtn: DownloadButton;
+}
+
 export class ComparisonController {
-  /**
-   * @param {HTMLElement} container - Container element
-   */
-  constructor(container) {
+  private container: HTMLElement;
+  private processor: ComparisonProcessor;
+  private files: File[];
+  private unsubscribers: UnsubscribeFunction[];
+  private components: Partial<Components>;
+  private generateBtn!: HTMLButtonElement;
+  private clearBtn!: HTMLButtonElement;
+  private resultSection!: HTMLElement;
+  private resultImg!: HTMLImageElement;
+  private errorEl!: HTMLElement;
+
+  constructor(container: HTMLElement) {
     this.container = container;
     this.processor = new ComparisonProcessor();
     this.files = [];
@@ -25,7 +38,7 @@ export class ComparisonController {
     this.attachEvents();
   }
 
-  render() {
+  private render(): void {
     this.container.innerHTML = `
       <div class="comparison-tool">
         <div class="tool-header">
@@ -61,18 +74,35 @@ export class ComparisonController {
       </div>
     `;
 
-    // Cache DOM references
-    this.generateBtn = this.container.querySelector('#comparison-generate');
-    this.clearBtn = this.container.querySelector('#comparison-clear');
-    this.resultSection = this.container.querySelector('#comparison-result');
-    this.resultImg = this.container.querySelector('#comparison-result-img');
-    this.errorEl = this.container.querySelector('#comparison-error');
+    const generateBtn = this.container.querySelector('#comparison-generate');
+    const clearBtn = this.container.querySelector('#comparison-clear');
+    const resultSection = this.container.querySelector('#comparison-result');
+    const resultImg = this.container.querySelector('#comparison-result-img');
+    const errorEl = this.container.querySelector('#comparison-error');
+
+    if (!generateBtn || !clearBtn || !resultSection || !resultImg || !errorEl) {
+      throw new Error('Failed to initialize comparison controller elements');
+    }
+
+    this.generateBtn = generateBtn as HTMLButtonElement;
+    this.clearBtn = clearBtn as HTMLButtonElement;
+    this.resultSection = resultSection as HTMLElement;
+    this.resultImg = resultImg as HTMLImageElement;
+    this.errorEl = errorEl as HTMLElement;
   }
 
-  initComponents() {
-    // File uploader (limited to 2 files)
+  private initComponents(): void {
+    const uploaderContainer = this.container.querySelector('#comparison-uploader');
+    const previewContainer = this.container.querySelector('#comparison-preview');
+    const progressContainer = this.container.querySelector('#comparison-progress');
+    const downloadContainer = this.container.querySelector('#comparison-download');
+
+    if (!uploaderContainer || !previewContainer || !progressContainer || !downloadContainer) {
+      throw new Error('Failed to find component containers');
+    }
+
     this.components.uploader = new FileUploader(
-      this.container.querySelector('#comparison-uploader'),
+      uploaderContainer as HTMLElement,
       {
         maxFiles: 2,
         multiple: true,
@@ -80,19 +110,10 @@ export class ComparisonController {
       }
     );
 
-    // Image preview
-    this.components.preview = new ImagePreview(
-      this.container.querySelector('#comparison-preview')
-    );
-
-    // Progress bar
-    this.components.progressBar = new ProgressBar(
-      this.container.querySelector('#comparison-progress')
-    );
-
-    // Download button
+    this.components.preview = new ImagePreview(previewContainer as HTMLElement);
+    this.components.progressBar = new ProgressBar(progressContainer as HTMLElement);
     this.components.downloadBtn = new DownloadButton(
-      this.container.querySelector('#comparison-download'),
+      downloadContainer as HTMLElement,
       {
         prefix: 'comparison',
         extension: '.png',
@@ -101,32 +122,27 @@ export class ComparisonController {
     );
   }
 
-  attachEvents() {
-    // Listen for file changes
+  private attachEvents(): void {
     this.unsubscribers.push(
-      eventBus.on('comparison-files-changed', (files) => {
+      eventBus.on<File[]>('comparison-files-changed', (files) => {
         this.files = files;
         this.onFilesChanged();
       })
     );
 
-    // Generate button
     this.generateBtn.addEventListener('click', () => this.generate());
-
-    // Clear button
     this.clearBtn.addEventListener('click', () => this.clear());
 
-    // Subscribe to error state
     this.unsubscribers.push(
       stateManager.subscribe('error', (error) => {
         if (error) {
-          this.showError(error);
+          this.showError(error as string);
         }
       })
     );
   }
 
-  async onFilesChanged() {
+  private async onFilesChanged(): Promise<void> {
     this.hideResult();
     this.hideError();
 
@@ -136,24 +152,22 @@ export class ComparisonController {
       this.clearBtn.classList.add('hidden');
     }
 
-    // Update preview
     if (this.files.length === 2) {
-      await this.components.preview.showComparison(this.files);
+      await this.components.preview?.showComparison(this.files);
       this.generateBtn.disabled = false;
     } else {
-      this.components.preview.clear();
+      this.components.preview?.clear();
       this.generateBtn.disabled = true;
     }
   }
 
-  async generate() {
+  private async generate(): Promise<void> {
     this.hideError();
     this.hideResult();
 
-    // Validate files
     const validation = validateComparisonFiles(this.files);
     if (!validation.valid) {
-      this.showError(validation.error);
+      this.showError(validation.error ?? 'Validation failed');
       return;
     }
 
@@ -163,49 +177,49 @@ export class ComparisonController {
       const result = await this.processor.process(this.files);
       this.showResult(result);
     } catch (error) {
-      this.showError(error.message);
+      this.showError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       this.generateBtn.disabled = false;
     }
   }
 
-  showResult(data) {
-    const blob = new Blob([data], { type: 'image/png' });
+  private showResult(data: Uint8Array): void {
+    // Create a new Uint8Array from an ArrayBuffer to ensure type compatibility
+    const safeData = new Uint8Array(data);
+    const blob = new Blob([safeData], { type: 'image/png' });
     const url = URL.createObjectURL(blob);
     
-    // Clean up previous URL
     if (this.resultImg.src && this.resultImg.src.startsWith('blob:')) {
       URL.revokeObjectURL(this.resultImg.src);
     }
     
     this.resultImg.src = url;
     this.resultSection.classList.remove('hidden');
-    this.components.downloadBtn.setResult(data);
+    this.components.downloadBtn?.setResult(data);
     
-    // Scroll to result
     this.resultSection.scrollIntoView({ behavior: 'smooth' });
   }
 
-  hideResult() {
+  private hideResult(): void {
     this.resultSection.classList.add('hidden');
-    this.components.downloadBtn.hide();
+    this.components.downloadBtn?.hide();
   }
 
-  showError(message) {
+  private showError(message: string): void {
     this.errorEl.textContent = message;
     this.errorEl.classList.remove('hidden');
   }
 
-  hideError() {
+  private hideError(): void {
     this.errorEl.textContent = '';
     this.errorEl.classList.add('hidden');
     stateManager.setState({ error: null });
   }
 
-  clear() {
+  clear(): void {
     this.files = [];
-    this.components.uploader.clear();
-    this.components.preview.clear();
+    this.components.uploader?.clear();
+    this.components.preview?.clear();
     this.hideResult();
     this.hideError();
     this.generateBtn.disabled = true;
@@ -213,14 +227,11 @@ export class ComparisonController {
     stateManager.reset();
   }
 
-  destroy() {
-    // Clean up subscriptions
+  destroy(): void {
     this.unsubscribers.forEach(unsub => unsub());
     
-    // Clean up components
-    Object.values(this.components).forEach(comp => comp.destroy?.());
+    Object.values(this.components).forEach(comp => comp?.destroy?.());
     
-    // Clean up result URL
     if (this.resultImg.src && this.resultImg.src.startsWith('blob:')) {
       URL.revokeObjectURL(this.resultImg.src);
     }

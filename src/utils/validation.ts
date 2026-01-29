@@ -1,23 +1,16 @@
-import { CONFIG, MESSAGES } from '../config.js';
+import { CONFIG, MESSAGES } from '../config.ts';
+import type { ValidationResult } from '../types.ts';
 
-/**
- * Validate a single file
- * @param {File} file - File to validate
- * @returns {{ valid: boolean, error?: string }}
- */
-export function validateFile(file) {
-  // Check file type
-  const extension = '.' + file.name.split('.').pop().toLowerCase();
+export function validateFile(file: File): ValidationResult {
+  const extension = '.' + file.name.split('.').pop()?.toLowerCase();
   if (!CONFIG.ACCEPTED_FORMATS.includes(extension)) {
     return { valid: false, error: MESSAGES.ERROR_INVALID_FORMAT };
   }
 
-  // Check MIME type
   if (!CONFIG.ACCEPTED_MIME_TYPES.includes(file.type)) {
     return { valid: false, error: MESSAGES.ERROR_INVALID_FORMAT };
   }
 
-  // Check file size
   if (file.size > CONFIG.MAX_FILE_SIZE) {
     return { valid: false, error: MESSAGES.ERROR_FILE_TOO_LARGE };
   }
@@ -25,12 +18,7 @@ export function validateFile(file) {
   return { valid: true };
 }
 
-/**
- * Validate files for comparison tool
- * @param {File[]} files - Files to validate
- * @returns {{ valid: boolean, error?: string }}
- */
-export function validateComparisonFiles(files) {
+export function validateComparisonFiles(files: File[]): ValidationResult {
   if (files.length !== 2) {
     return { valid: false, error: MESSAGES.ERROR_MIN_FILES_COMPARISON };
   }
@@ -45,12 +33,7 @@ export function validateComparisonFiles(files) {
   return { valid: true };
 }
 
-/**
- * Validate files for slideshow tool
- * @param {File[]} files - Files to validate
- * @returns {{ valid: boolean, error?: string }}
- */
-export function validateSlideshowFiles(files) {
+export function validateSlideshowFiles(files: File[]): ValidationResult {
   if (files.length < 2) {
     return { valid: false, error: MESSAGES.ERROR_MIN_FILES_SLIDESHOW };
   }

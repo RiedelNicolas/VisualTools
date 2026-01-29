@@ -1,20 +1,38 @@
-import { eventBus } from '../../core/event-bus.js';
-import { stateManager } from '../../core/state-manager.js';
-import { FileUploader } from '../../components/file-uploader.js';
-import { ProgressBar } from '../../components/progress-bar.js';
-import { DownloadButton } from '../../components/download-button.js';
-import { SlideshowProcessor } from './slideshow-processor.js';
-import { validateSlideshowFiles } from '../../utils/validation.js';
-import { CONFIG } from '../../config.js';
+import { eventBus } from '../../core/event-bus.ts';
+import { stateManager } from '../../core/state-manager.ts';
+import { FileUploader } from '../../components/file-uploader.ts';
+import { ProgressBar } from '../../components/progress-bar.ts';
+import { DownloadButton } from '../../components/download-button.ts';
+import { SlideshowProcessor } from './slideshow-processor.ts';
+import { validateSlideshowFiles } from '../../utils/validation.ts';
+import { CONFIG } from '../../config.ts';
+import type { UnsubscribeFunction } from '../../types.ts';
 
-/**
- * Controller for the slideshow tool
- */
+interface Components {
+  uploader: FileUploader;
+  progressBar: ProgressBar;
+  downloadBtn: DownloadButton;
+}
+
 export class SlideshowController {
-  /**
-   * @param {HTMLElement} container - Container element
-   */
-  constructor(container) {
+  private container: HTMLElement;
+  private processor: SlideshowProcessor;
+  private files: File[];
+  private unsubscribers: UnsubscribeFunction[];
+  private components: Partial<Components>;
+  private videoObjectUrl: string | null;
+  private generateBtn!: HTMLButtonElement;
+  private clearBtn!: HTMLButtonElement;
+  private settingsEl!: HTMLElement;
+  private infoEl!: HTMLElement;
+  private infoTextEl!: HTMLElement;
+  private displayDurationInput!: HTMLInputElement;
+  private transitionDurationInput!: HTMLInputElement;
+  private resultSection!: HTMLElement;
+  private videoEl!: HTMLVideoElement;
+  private errorEl!: HTMLElement;
+
+  constructor(container: HTMLElement) {
     this.container = container;
     this.processor = new SlideshowProcessor();
     this.files = [];
@@ -26,7 +44,7 @@ export class SlideshowController {
     this.attachEvents();
   }
 
-  render() {
+  private render(): void {
     this.container.innerHTML = `
       <div class="slideshow-tool">
         <div class="tool-header">
@@ -98,23 +116,46 @@ export class SlideshowController {
       </div>
     `;
 
-    // Cache DOM references
-    this.generateBtn = this.container.querySelector('#slideshow-generate');
-    this.clearBtn = this.container.querySelector('#slideshow-clear');
-    this.settingsEl = this.container.querySelector('#slideshow-settings');
-    this.infoEl = this.container.querySelector('#slideshow-info');
-    this.infoTextEl = this.container.querySelector('#info-text');
-    this.displayDurationInput = this.container.querySelector('#display-duration');
-    this.transitionDurationInput = this.container.querySelector('#transition-duration');
-    this.resultSection = this.container.querySelector('#slideshow-result');
-    this.videoEl = this.container.querySelector('#slideshow-video');
-    this.errorEl = this.container.querySelector('#slideshow-error');
+    const generateBtn = this.container.querySelector('#slideshow-generate');
+    const clearBtn = this.container.querySelector('#slideshow-clear');
+    const settingsEl = this.container.querySelector('#slideshow-settings');
+    const infoEl = this.container.querySelector('#slideshow-info');
+    const infoTextEl = this.container.querySelector('#info-text');
+    const displayDurationInput = this.container.querySelector('#display-duration');
+    const transitionDurationInput = this.container.querySelector('#transition-duration');
+    const resultSection = this.container.querySelector('#slideshow-result');
+    const videoEl = this.container.querySelector('#slideshow-video');
+    const errorEl = this.container.querySelector('#slideshow-error');
+
+    if (!generateBtn || !clearBtn || !settingsEl || !infoEl || !infoTextEl ||
+        !displayDurationInput || !transitionDurationInput || !resultSection ||
+        !videoEl || !errorEl) {
+      throw new Error('Failed to initialize slideshow controller elements');
+    }
+
+    this.generateBtn = generateBtn as HTMLButtonElement;
+    this.clearBtn = clearBtn as HTMLButtonElement;
+    this.settingsEl = settingsEl as HTMLElement;
+    this.infoEl = infoEl as HTMLElement;
+    this.infoTextEl = infoTextEl as HTMLElement;
+    this.displayDurationInput = displayDurationInput as HTMLInputElement;
+    this.transitionDurationInput = transitionDurationInput as HTMLInputElement;
+    this.resultSection = resultSection as HTMLElement;
+    this.videoEl = videoEl as HTMLVideoElement;
+    this.errorEl = errorEl as HTMLElement;
   }
 
-  initComponents() {
-    // File uploader
+  private initComponents(): void {
+    const uploaderContainer = this.container.querySelector('#slideshow-uploader');
+    const progressContainer = this.container.querySelector('#slideshow-progress');
+    const downloadContainer = this.container.querySelector('#slideshow-download');
+
+    if (!uploaderContainer || !progressContainer || !downloadContainer) {
+      throw new Error('Failed to find component containers');
+    }
+
     this.components.uploader = new FileUploader(
-      this.container.querySelector('#slideshow-uploader'),
+      uploaderContainer as HTMLElement,
       {
         maxFiles: CONFIG.MAX_FILES_SLIDESHOW,
         multiple: true,
@@ -122,14 +163,9 @@ export class SlideshowController {
       }
     );
 
-    // Progress bar
-    this.components.progressBar = new ProgressBar(
-      this.container.querySelector('#slideshow-progress')
-    );
-
-    // Download button
+    this.components.progressBar = new ProgressBar(progressContainer as HTMLElement);
     this.components.downloadBtn = new DownloadButton(
-      this.container.querySelector('#slideshow-download'),
+      downloadContainer as HTMLElement,
       {
         prefix: 'slideshow',
         extension: '.mp4',
@@ -138,36 +174,30 @@ export class SlideshowController {
     );
   }
 
-  attachEvents() {
-    // Listen for file changes
+  private attachEvents(): void {
     this.unsubscribers.push(
-      eventBus.on('slideshow-files-changed', (files) => {
+      eventBus.on<File[]>('slideshow-files-changed', (files) => {
         this.files = files;
         this.onFilesChanged();
       })
     );
 
-    // Generate button
     this.generateBtn.addEventListener('click', () => this.generate());
-
-    // Clear button
     this.clearBtn.addEventListener('click', () => this.clear());
 
-    // Listen for duration changes
     this.displayDurationInput.addEventListener('input', () => this.updateInfoText());
     this.transitionDurationInput.addEventListener('input', () => this.updateInfoText());
 
-    // Subscribe to error state
     this.unsubscribers.push(
       stateManager.subscribe('error', (error) => {
         if (error) {
-          this.showError(error);
+          this.showError(error as string);
         }
       })
     );
   }
 
-  onFilesChanged() {
+  private onFilesChanged(): void {
     this.hideResult();
     this.hideError();
 
@@ -181,35 +211,28 @@ export class SlideshowController {
       this.infoEl.classList.add('hidden');
     }
 
-    // Enable generate button if we have at least 2 files
     this.generateBtn.disabled = this.files.length < 2;
   }
 
-  /**
-   * Update the info text to reflect current duration settings
-   */
-  updateInfoText() {
+  private updateInfoText(): void {
     const displayDuration = parseFloat(this.displayDurationInput.value) || CONFIG.DISPLAY_DURATION;
     const transitionDuration = parseFloat(this.transitionDurationInput.value) || CONFIG.TRANSITION_DURATION;
     this.infoTextEl.textContent = `Drag images to reorder them. Each image shows for ${displayDuration}s with ${transitionDuration}s fade transitions.`;
   }
 
-  async generate() {
+  private async generate(): Promise<void> {
     this.hideError();
     this.hideResult();
 
-    // Validate files
     const validation = validateSlideshowFiles(this.files);
     if (!validation.valid) {
-      this.showError(validation.error);
+      this.showError(validation.error ?? 'Validation failed');
       return;
     }
 
-    // Get duration values from inputs
     const displayDuration = parseFloat(this.displayDurationInput.value) || CONFIG.DISPLAY_DURATION;
     const transitionDuration = parseFloat(this.transitionDurationInput.value) || CONFIG.TRANSITION_DURATION;
 
-    // Validate durations
     if (displayDuration < CONFIG.DISPLAY_DURATION_MIN || displayDuration > CONFIG.DISPLAY_DURATION_MAX) {
       this.showError(`Display time must be between ${CONFIG.DISPLAY_DURATION_MIN} and ${CONFIG.DISPLAY_DURATION_MAX} seconds`);
       return;
@@ -222,41 +245,40 @@ export class SlideshowController {
     this.generateBtn.disabled = true;
 
     try {
-      // Pass custom durations to processor
       this.processor.displayDuration = displayDuration;
       this.processor.transitionDuration = transitionDuration;
       
       const result = await this.processor.process(this.files);
       this.showResult(result);
     } catch (error) {
-      this.showError(error.message);
+      this.showError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       this.generateBtn.disabled = this.files.length < 2;
     }
   }
 
-  showResult(data) {
-    // Clean up previous URL
+  private showResult(data: Uint8Array): void {
     this.cleanupVideoUrl();
     
-    const blob = new Blob([data], { type: 'video/mp4' });
+    // Create a new Uint8Array from an ArrayBuffer to ensure type compatibility
+    const safeData = new Uint8Array(data);
+    const blob = new Blob([safeData], { type: 'video/mp4' });
     this.videoObjectUrl = URL.createObjectURL(blob);
     
     this.videoEl.src = this.videoObjectUrl;
     this.resultSection.classList.remove('hidden');
-    this.components.downloadBtn.setResult(data);
+    this.components.downloadBtn?.setResult(data);
     
-    // Scroll to result
     this.resultSection.scrollIntoView({ behavior: 'smooth' });
   }
 
-  hideResult() {
+  private hideResult(): void {
     this.resultSection.classList.add('hidden');
-    this.components.downloadBtn.hide();
+    this.components.downloadBtn?.hide();
     this.cleanupVideoUrl();
   }
 
-  cleanupVideoUrl() {
+  private cleanupVideoUrl(): void {
     if (this.videoObjectUrl) {
       URL.revokeObjectURL(this.videoObjectUrl);
       this.videoObjectUrl = null;
@@ -264,41 +286,37 @@ export class SlideshowController {
     this.videoEl.src = '';
   }
 
-  showError(message) {
+  private showError(message: string): void {
     this.errorEl.textContent = message;
     this.errorEl.classList.remove('hidden');
   }
 
-  hideError() {
+  private hideError(): void {
     this.errorEl.textContent = '';
     this.errorEl.classList.add('hidden');
     stateManager.setState({ error: null });
   }
 
-  clear() {
+  clear(): void {
     this.files = [];
-    this.components.uploader.clear();
+    this.components.uploader?.clear();
     this.hideResult();
     this.hideError();
     this.generateBtn.disabled = true;
     this.clearBtn.classList.add('hidden');
     this.settingsEl.classList.add('hidden');
     this.infoEl.classList.add('hidden');
-    // Reset duration inputs to default values
-    this.displayDurationInput.value = CONFIG.DISPLAY_DURATION;
-    this.transitionDurationInput.value = CONFIG.TRANSITION_DURATION;
+    this.displayDurationInput.value = String(CONFIG.DISPLAY_DURATION);
+    this.transitionDurationInput.value = String(CONFIG.TRANSITION_DURATION);
     this.updateInfoText();
     stateManager.reset();
   }
 
-  destroy() {
-    // Clean up subscriptions
+  destroy(): void {
     this.unsubscribers.forEach(unsub => unsub());
     
-    // Clean up components
-    Object.values(this.components).forEach(comp => comp.destroy?.());
+    Object.values(this.components).forEach(comp => comp?.destroy?.());
     
-    // Clean up video URL
     this.cleanupVideoUrl();
     
     this.container.innerHTML = '';
