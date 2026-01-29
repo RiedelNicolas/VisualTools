@@ -8,10 +8,12 @@ export class ProgressBar {
   private messageEl!: HTMLElement;
   private fillEl!: HTMLElement;
   private percentageEl!: HTMLElement;
+  private currentProgress: number;
 
   constructor(container: HTMLElement) {
     this.container = container;
     this.unsubscribers = [];
+    this.currentProgress = 0;
     this.render();
     this.subscribe();
   }
@@ -82,11 +84,11 @@ export class ProgressBar {
     const clampedProgress = Math.min(100, Math.max(0, progress));
     
     // Only update if progress increases (monotonic) to avoid race conditions
-    const currentProgress = parseFloat(this.percentageEl.textContent || '0');
-    if (clampedProgress < currentProgress) {
+    if (clampedProgress < this.currentProgress) {
       return;
     }
     
+    this.currentProgress = clampedProgress;
     this.fillEl.style.width = `${clampedProgress}%`;
     this.percentageEl.textContent = `${clampedProgress}%`;
     
@@ -107,6 +109,7 @@ export class ProgressBar {
 
   private hide(): void {
     this.progressContainer.classList.add('hidden');
+    this.currentProgress = 0;
     this.updateProgress(0);
     this.updateMessage('');
   }

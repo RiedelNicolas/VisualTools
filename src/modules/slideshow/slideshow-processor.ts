@@ -19,6 +19,8 @@ export class SlideshowProcessor {
       throw new Error('At least 2 images required');
     }
 
+    let progressSimulation: number | undefined;
+
     stateManager.setState({
       processing: true,
       progressMessage: MESSAGES.ANALYZING_IMAGES,
@@ -75,29 +77,25 @@ export class SlideshowProcessor {
       }
 
       // Start a progress simulation as fallback in case FFmpeg progress events don't fire
-      const progressSimulation = setInterval(() => {
+      progressSimulation = setInterval(() => {
         const currentProgress = stateManager.getState('progress') as number;
         if (currentProgress < 85) {
           // Slowly increment progress from 40% to 85% over time (1% per second)
           stateManager.setState({ progress: Math.min(85, currentProgress + 1) });
         }
-      }, 1000);
+      }, 1000) as unknown as number;
 
-      try {
-        await ffmpegManager.execute([
-          ...inputArgs,
-          '-filter_complex', filterComplex,
-          '-map', '[vfinal]',
-          '-c:v', 'libx264',
-          '-pix_fmt', 'yuv420p',
-          '-preset', 'fast',
-          '-movflags', '+faststart',
-          '-y',
-          outputFile
-        ]);
-      } finally {
-        clearInterval(progressSimulation);
-      }
+      await ffmpegManager.execute([
+        ...inputArgs,
+        '-filter_complex', filterComplex,
+        '-map', '[vfinal]',
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        '-preset', 'fast',
+        '-movflags', '+faststart',
+        '-y',
+        outputFile
+      ]);
 
       stateManager.setState({ progress: 90 });
 
@@ -116,6 +114,9 @@ export class SlideshowProcessor {
       console.error('Slideshow processing error:', error);
       throw new Error(MESSAGES.ERROR_PROCESSING);
     } finally {
+      if (progressSimulation !== undefined) {
+        clearInterval(progressSimulation);
+      }
       stateManager.setState({ processing: false });
     }
   }
