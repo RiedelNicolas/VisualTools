@@ -31,6 +31,7 @@ export class SlideshowController {
   private resultSection!: HTMLElement;
   private videoEl!: HTMLVideoElement;
   private errorEl!: HTMLElement;
+  private processingSpinner!: HTMLElement;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -103,6 +104,11 @@ export class SlideshowController {
           
           <div id="slideshow-progress"></div>
           
+          <div id="slideshow-processing-spinner" class="processing-spinner-container hidden">
+            <div class="spinner"></div>
+            <p class="processing-message">Finalizing video...</p>
+          </div>
+          
           <div id="slideshow-result" class="result-section hidden">
             <h3>Result</h3>
             <div class="video-container">
@@ -126,10 +132,11 @@ export class SlideshowController {
     const resultSection = this.container.querySelector('#slideshow-result');
     const videoEl = this.container.querySelector('#slideshow-video');
     const errorEl = this.container.querySelector('#slideshow-error');
+    const processingSpinner = this.container.querySelector('#slideshow-processing-spinner');
 
     if (!generateBtn || !clearBtn || !settingsEl || !infoEl || !infoTextEl ||
         !displayDurationInput || !transitionDurationInput || !resultSection ||
-        !videoEl || !errorEl) {
+        !videoEl || !errorEl || !processingSpinner) {
       throw new Error('Failed to initialize slideshow controller elements');
     }
 
@@ -143,6 +150,7 @@ export class SlideshowController {
     this.resultSection = resultSection as HTMLElement;
     this.videoEl = videoEl as HTMLVideoElement;
     this.errorEl = errorEl as HTMLElement;
+    this.processingSpinner = processingSpinner as HTMLElement;
   }
 
   private initComponents(): void {
@@ -195,11 +203,22 @@ export class SlideshowController {
         }
       })
     );
+
+    // Subscribe to progress changes to show spinner when reaching 100%
+    this.unsubscribers.push(
+      stateManager.subscribe('progress', (progress) => {
+        if (progress === 100 && stateManager.getState('processing')) {
+          // Hide progress bar and show spinner when progress reaches 100%
+          this.showProcessingSpinner();
+        }
+      })
+    );
   }
 
   private onFilesChanged(): void {
     this.hideResult();
     this.hideError();
+    this.hideProcessingSpinner();
 
     if (this.files.length > 0) {
       this.clearBtn.classList.remove('hidden');
@@ -223,6 +242,7 @@ export class SlideshowController {
   private async generate(): Promise<void> {
     this.hideError();
     this.hideResult();
+    this.hideProcessingSpinner();
 
     const validation = validateSlideshowFiles(this.files);
     if (!validation.valid) {
@@ -258,6 +278,7 @@ export class SlideshowController {
   }
 
   private showResult(data: Uint8Array): void {
+    this.hideProcessingSpinner();
     this.cleanupVideoUrl();
     
     // Note: TypeScript requires this because Uint8Array.buffer could be SharedArrayBuffer,
@@ -297,11 +318,20 @@ export class SlideshowController {
     stateManager.setState({ error: null });
   }
 
+  private showProcessingSpinner(): void {
+    this.processingSpinner.classList.remove('hidden');
+  }
+
+  private hideProcessingSpinner(): void {
+    this.processingSpinner.classList.add('hidden');
+  }
+
   clear(): void {
     this.files = [];
     this.components.uploader?.clear();
     this.hideResult();
     this.hideError();
+    this.hideProcessingSpinner();
     this.generateBtn.disabled = true;
     this.clearBtn.classList.add('hidden');
     this.settingsEl.classList.add('hidden');
