@@ -318,6 +318,10 @@ body {
   font-size: 0.875rem;
   border-top: 1px solid var(--color-border);
   background-color: var(--color-bg-white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .app-footer a {
@@ -327,6 +331,28 @@ body {
 
 .app-footer a:hover {
   text-decoration: underline;
+}
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  transition: transform var(--transition-fast);
+}
+
+.github-link:hover {
+  text-decoration: none;
+  transform: scale(1.1);
+}
+
+.github-icon {
+  width: 24px;
+  height: 24px;
+  fill: var(--color-text-light);
+  transition: fill var(--transition-fast);
+}
+
+.github-link:hover .github-icon {
+  fill: var(--color-primary);
 }
 
 /* Utility Classes */
