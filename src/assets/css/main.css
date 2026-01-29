@@ -421,7 +421,7 @@ body {
 }
 
 /* Privacy Redactor Tool */
-.privacy-redactor-tool {
+.image-redactor-tool {
   background-color: var(--color-bg-white);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);

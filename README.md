@@ -17,7 +17,7 @@ Create MP4 videos with smooth crossfade transitions from multiple images. Featur
 - crossfade transitions
 - Preview before download
 
-### 🔒 Privacy Redactor
+### 🔒 Image Redactor
 Client-side image editing tool to hide sensitive information. Features:
 - Canvas-based editing interface
 - Draw rectangles to select areas to redact
