@@ -14,8 +14,7 @@ Combine two images horizontally for easy comparison. Great for:
 Create MP4 videos with smooth crossfade transitions from multiple images. Features:
 - Upload up to 20 images
 - Drag to reorder images
-- 1.5s display time per image
-- 0.5s crossfade transitions
+- crossfade transitions
 - Preview before download
 
 ## Live Demo
@@ -24,7 +23,7 @@ Visit [https://riedelnicolas.github.io/VisualTools/](https://riedelnicolas.githu
 
 ## Technology Stack
 
-- **Vanilla JavaScript** (ES6 modules)
+- **TypeScript** (ES6 modules with strict type checking)
 - **CSS** with CSS Variables for theming
 - **FFmpeg.wasm** for image/video processing
 - **Vite** for development and building

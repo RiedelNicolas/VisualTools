@@ -117,12 +117,18 @@ export class SlideshowProcessor {
   private buildFilterComplex(numImages: number, width: number, height: number): { filterComplex: string } {
     const filters: string[] = [];
     
+    // First, scale and pad each input image, then convert to video with loop
     for (let i = 0; i < numImages; i++) {
       const duration = this.calculateDuration(i, numImages);
+      const frameCount = Math.ceil(duration * this.fps);
+      // loop filter: loop=N means loop N times (original + N loops = N+1 frames total)
+      // For frameCount frames, we need to loop (frameCount - 1) times
+      const loopCount = Math.max(0, frameCount - 1);
       filters.push(
         `[${i}:v]scale=${width}:${height}:force_original_aspect_ratio=decrease,` +
         `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black,` +
         `setsar=1,fps=${this.fps},format=yuva420p,` +
+        `loop=loop=${loopCount}:size=1:start=0,` +
         `trim=duration=${duration},setpts=PTS-STARTPTS[v${i}]`
       );
     }
