@@ -2,30 +2,30 @@
  * Processor for applying obfuscation effects to images
  */
 
-export interface RedactionRegion {
+export interface ObfuscationRegion {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-export type RedactionEffect = 'blur' | 'pixelate';
+export type ObfuscationEffect = 'blur' | 'pixelate';
 
 export class ImageObfuscatorProcessor {
   /**
-   * Apply redaction effects to an image
+   * Apply obfuscation effects to an image
    * @param imageFile The image file to process
-   * @param regions Array of regions to redact
+   * @param regions Array of regions to obfuscate
    * @param effect The type of effect to apply (blur or pixelate)
    * @returns Promise<Uint8Array> The processed image data
    */
   async process(
     imageFile: File,
-    regions: RedactionRegion[],
-    effect: RedactionEffect
+    regions: ObfuscationRegion[],
+    effect: ObfuscationEffect
   ): Promise<Uint8Array> {
     if (regions.length === 0) {
-      throw new Error('No regions selected for redaction');
+      throw new Error('No regions selected for obfuscation');
     }
 
     // Create canvas and load image
@@ -43,7 +43,7 @@ export class ImageObfuscatorProcessor {
     // Draw the original image
     ctx.drawImage(img, 0, 0);
 
-    // Apply redaction to each region
+    // Apply obfuscation to each region
     for (const region of regions) {
       if (effect === 'blur') {
         this.applyBlur(ctx, region);
@@ -71,7 +71,7 @@ export class ImageObfuscatorProcessor {
   /**
    * Apply blur effect to a region
    */
-  private applyBlur(ctx: CanvasRenderingContext2D, region: RedactionRegion): void {
+  private applyBlur(ctx: CanvasRenderingContext2D, region: ObfuscationRegion): void {
     // Save the current state
     ctx.save();
 
@@ -102,7 +102,7 @@ export class ImageObfuscatorProcessor {
   /**
    * Apply pixelate effect to a region
    */
-  private applyPixelate(ctx: CanvasRenderingContext2D, region: RedactionRegion): void {
+  private applyPixelate(ctx: CanvasRenderingContext2D, region: ObfuscationRegion): void {
     const pixelSize = 10; // Size of each "pixel" in the pixelated effect
 
     // Get the image data for the region
