@@ -2,11 +2,12 @@ import { stateManager } from './core/state-manager.ts';
 import { eventBus } from './core/event-bus.ts';
 import { ComparisonController } from './modules/comparison/comparison-controller.ts';
 import { SlideshowController } from './modules/slideshow/slideshow-controller.ts';
+import { PrivacyRedactorController } from './modules/privacy-redactor/privacy-redactor-controller.ts';
 import './assets/css/main.css';
 import './assets/css/components.css';
 import './assets/css/animations.css';
 
-type ToolController = ComparisonController | SlideshowController;
+type ToolController = ComparisonController | SlideshowController | PrivacyRedactorController;
 
 class VisualToolsApp {
   private currentTool: string | null;
@@ -102,13 +103,15 @@ class VisualToolsApp {
     });
 
     this.currentTool = toolName;
-    stateManager.setState({ currentTool: toolName as 'comparison' | 'slideshow' });
+    stateManager.setState({ currentTool: toolName as 'comparison' | 'slideshow' | 'privacy-redactor' });
     stateManager.reset();
 
     if (toolName === 'comparison') {
       this.toolController = new ComparisonController(this.toolContainer);
     } else if (toolName === 'slideshow') {
       this.toolController = new SlideshowController(this.toolContainer);
+    } else if (toolName === 'privacy-redactor') {
+      this.toolController = new PrivacyRedactorController(this.toolContainer);
     }
 
     eventBus.emit<string>('tool-changed', toolName);

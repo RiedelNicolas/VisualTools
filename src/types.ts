@@ -12,7 +12,7 @@ export interface AppState {
   progressMessage: string;
   result: Uint8Array | null;
   error: string | null;
-  currentTool: 'comparison' | 'slideshow';
+  currentTool: 'comparison' | 'slideshow' | 'privacy-redactor';
 }
 
 export type StateKey = keyof AppState;
