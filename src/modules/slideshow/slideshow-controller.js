@@ -37,9 +37,41 @@ export class SlideshowController {
         <div class="tool-content">
           <div id="slideshow-uploader"></div>
           
+          <div class="slideshow-settings hidden" id="slideshow-settings">
+            <h3>Video Settings</h3>
+            <div class="settings-grid">
+              <div class="setting-item">
+                <label for="display-duration">Display Time (seconds)</label>
+                <input 
+                  type="number" 
+                  id="display-duration" 
+                  min="0.5" 
+                  max="10" 
+                  step="0.5" 
+                  value="${CONFIG.DISPLAY_DURATION}"
+                  class="duration-input"
+                />
+                <span class="setting-hint">How long each image is shown</span>
+              </div>
+              <div class="setting-item">
+                <label for="transition-duration">Fade Time (seconds)</label>
+                <input 
+                  type="number" 
+                  id="transition-duration" 
+                  min="0.1" 
+                  max="3" 
+                  step="0.1" 
+                  value="${CONFIG.TRANSITION_DURATION}"
+                  class="duration-input"
+                />
+                <span class="setting-hint">Duration of crossfade transitions</span>
+              </div>
+            </div>
+          </div>
+          
           <div class="slideshow-info hidden" id="slideshow-info">
             <span class="info-icon">ℹ️</span>
-            <span class="info-text">Drag images to reorder them. Each image shows for ${CONFIG.DISPLAY_DURATION}s with ${CONFIG.TRANSITION_DURATION}s fade transitions.</span>
+            <span class="info-text" id="info-text">Drag images to reorder them. Each image shows for ${CONFIG.DISPLAY_DURATION}s with ${CONFIG.TRANSITION_DURATION}s fade transitions.</span>
           </div>
           
           <div class="tool-actions">
@@ -69,7 +101,11 @@ export class SlideshowController {
     // Cache DOM references
     this.generateBtn = this.container.querySelector('#slideshow-generate');
     this.clearBtn = this.container.querySelector('#slideshow-clear');
+    this.settingsEl = this.container.querySelector('#slideshow-settings');
     this.infoEl = this.container.querySelector('#slideshow-info');
+    this.infoTextEl = this.container.querySelector('#info-text');
+    this.displayDurationInput = this.container.querySelector('#display-duration');
+    this.transitionDurationInput = this.container.querySelector('#transition-duration');
     this.resultSection = this.container.querySelector('#slideshow-result');
     this.videoEl = this.container.querySelector('#slideshow-video');
     this.errorEl = this.container.querySelector('#slideshow-error');
@@ -117,6 +153,10 @@ export class SlideshowController {
     // Clear button
     this.clearBtn.addEventListener('click', () => this.clear());
 
+    // Listen for duration changes
+    this.displayDurationInput.addEventListener('input', () => this.updateInfoText());
+    this.transitionDurationInput.addEventListener('input', () => this.updateInfoText());
+
     // Subscribe to error state
     this.unsubscribers.push(
       stateManager.subscribe('error', (error) => {
@@ -133,14 +173,22 @@ export class SlideshowController {
 
     if (this.files.length > 0) {
       this.clearBtn.classList.remove('hidden');
+      this.settingsEl.classList.remove('hidden');
       this.infoEl.classList.remove('hidden');
     } else {
       this.clearBtn.classList.add('hidden');
+      this.settingsEl.classList.add('hidden');
       this.infoEl.classList.add('hidden');
     }
 
     // Enable generate button if we have at least 2 files
     this.generateBtn.disabled = this.files.length < 2;
+  }
+
+  updateInfoText() {
+    const displayDuration = parseFloat(this.displayDurationInput.value) || CONFIG.DISPLAY_DURATION;
+    const transitionDuration = parseFloat(this.transitionDurationInput.value) || CONFIG.TRANSITION_DURATION;
+    this.infoTextEl.textContent = `Drag images to reorder them. Each image shows for ${displayDuration}s with ${transitionDuration}s fade transitions.`;
   }
 
   async generate() {
@@ -154,9 +202,27 @@ export class SlideshowController {
       return;
     }
 
+    // Get duration values from inputs
+    const displayDuration = parseFloat(this.displayDurationInput.value) || CONFIG.DISPLAY_DURATION;
+    const transitionDuration = parseFloat(this.transitionDurationInput.value) || CONFIG.TRANSITION_DURATION;
+
+    // Validate durations
+    if (displayDuration < 0.5 || displayDuration > 10) {
+      this.showError('Display time must be between 0.5 and 10 seconds');
+      return;
+    }
+    if (transitionDuration < 0.1 || transitionDuration > 3) {
+      this.showError('Fade time must be between 0.1 and 3 seconds');
+      return;
+    }
+
     this.generateBtn.disabled = true;
 
     try {
+      // Pass custom durations to processor
+      this.processor.displayDuration = displayDuration;
+      this.processor.transitionDuration = transitionDuration;
+      
       const result = await this.processor.process(this.files);
       this.showResult(result);
     } catch (error) {
@@ -213,7 +279,12 @@ export class SlideshowController {
     this.hideError();
     this.generateBtn.disabled = true;
     this.clearBtn.classList.add('hidden');
+    this.settingsEl.classList.add('hidden');
     this.infoEl.classList.add('hidden');
+    // Reset duration inputs to default values
+    this.displayDurationInput.value = CONFIG.DISPLAY_DURATION;
+    this.transitionDurationInput.value = CONFIG.TRANSITION_DURATION;
+    this.updateInfoText();
     stateManager.reset();
   }
 
