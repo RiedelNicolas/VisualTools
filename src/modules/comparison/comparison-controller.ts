@@ -184,9 +184,9 @@ export class ComparisonController {
   }
 
   private showResult(data: Uint8Array): void {
-    // Create a new Uint8Array from an ArrayBuffer to ensure type compatibility
-    const safeData = new Uint8Array(data);
-    const blob = new Blob([safeData], { type: 'image/png' });
+    // Note: TypeScript requires this because Uint8Array.buffer could be SharedArrayBuffer,
+    // but Blob constructor only accepts ArrayBuffer. Creating a new Uint8Array ensures compatibility.
+    const blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
     const url = URL.createObjectURL(blob);
     
     if (this.resultImg.src && this.resultImg.src.startsWith('blob:')) {

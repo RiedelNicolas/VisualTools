@@ -47,7 +47,9 @@ export class DownloadButton {
     this.currentOptions = { ...this.options, ...customOptions } as Required<DownloadButtonOptions>;
 
     if (data instanceof Uint8Array) {
-      this.blob = new Blob([data as BlobPart], { type: this.currentOptions.mimeType });
+      // Note: TypeScript requires this because Uint8Array.buffer could be SharedArrayBuffer,
+      // but Blob constructor only accepts ArrayBuffer. Creating a new Uint8Array ensures compatibility.
+      this.blob = new Blob([new Uint8Array(data)], { type: this.currentOptions.mimeType });
     } else {
       this.blob = data;
     }

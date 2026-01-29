@@ -30,8 +30,8 @@ export function downloadBlob(blob: Blob, filename: string): void {
 
 export function getFileExtension(filename: string): string {
   const parts = filename.split('.');
-  const ext = parts.pop();
-  return '.' + (ext?.toLowerCase() ?? '');
+  const ext = parts.pop()?.toLowerCase();
+  return ext ? `.${ext}` : '';
 }
 
 export function generateFilename(prefix: string, extension: string): string {

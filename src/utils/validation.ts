@@ -2,7 +2,10 @@ import { CONFIG, MESSAGES } from '../config.ts';
 import type { ValidationResult } from '../types.ts';
 
 export function validateFile(file: File): ValidationResult {
-  const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+  const parts = file.name.split('.');
+  const ext = parts.pop()?.toLowerCase();
+  const extension = ext ? `.${ext}` : '';
+  
   if (!CONFIG.ACCEPTED_FORMATS.includes(extension)) {
     return { valid: false, error: MESSAGES.ERROR_INVALID_FORMAT };
   }
