@@ -241,7 +241,9 @@ body {
 
 .result-image-container img {
   max-width: 100%;
+  max-height: 80vh;
   height: auto;
+  object-fit: contain;
   border-radius: var(--radius-md);
 }
 
