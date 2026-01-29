@@ -45,9 +45,9 @@ export class SlideshowController {
                 <input 
                   type="number" 
                   id="display-duration" 
-                  min="0.5" 
-                  max="10" 
-                  step="0.5" 
+                  min="${CONFIG.DISPLAY_DURATION_MIN}" 
+                  max="${CONFIG.DISPLAY_DURATION_MAX}" 
+                  step="${CONFIG.DISPLAY_DURATION_STEP}" 
                   value="${CONFIG.DISPLAY_DURATION}"
                   class="duration-input"
                 />
@@ -58,9 +58,9 @@ export class SlideshowController {
                 <input 
                   type="number" 
                   id="transition-duration" 
-                  min="0.1" 
-                  max="3" 
-                  step="0.1" 
+                  min="${CONFIG.TRANSITION_DURATION_MIN}" 
+                  max="${CONFIG.TRANSITION_DURATION_MAX}" 
+                  step="${CONFIG.TRANSITION_DURATION_STEP}" 
                   value="${CONFIG.TRANSITION_DURATION}"
                   class="duration-input"
                 />
@@ -185,6 +185,9 @@ export class SlideshowController {
     this.generateBtn.disabled = this.files.length < 2;
   }
 
+  /**
+   * Update the info text to reflect current duration settings
+   */
   updateInfoText() {
     const displayDuration = parseFloat(this.displayDurationInput.value) || CONFIG.DISPLAY_DURATION;
     const transitionDuration = parseFloat(this.transitionDurationInput.value) || CONFIG.TRANSITION_DURATION;
@@ -207,12 +210,12 @@ export class SlideshowController {
     const transitionDuration = parseFloat(this.transitionDurationInput.value) || CONFIG.TRANSITION_DURATION;
 
     // Validate durations
-    if (displayDuration < 0.5 || displayDuration > 10) {
-      this.showError('Display time must be between 0.5 and 10 seconds');
+    if (displayDuration < CONFIG.DISPLAY_DURATION_MIN || displayDuration > CONFIG.DISPLAY_DURATION_MAX) {
+      this.showError(`Display time must be between ${CONFIG.DISPLAY_DURATION_MIN} and ${CONFIG.DISPLAY_DURATION_MAX} seconds`);
       return;
     }
-    if (transitionDuration < 0.1 || transitionDuration > 3) {
-      this.showError('Fade time must be between 0.1 and 3 seconds');
+    if (transitionDuration < CONFIG.TRANSITION_DURATION_MIN || transitionDuration > CONFIG.TRANSITION_DURATION_MAX) {
+      this.showError(`Fade time must be between ${CONFIG.TRANSITION_DURATION_MIN} and ${CONFIG.TRANSITION_DURATION_MAX} seconds`);
       return;
     }
 

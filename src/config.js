@@ -9,7 +9,14 @@ export const CONFIG = {
   DISPLAY_DURATION: 1.5,
   TRANSITION_DURATION: 0.5,
   VIDEO_FPS: 30,
-  FFMPEG_CDN: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+  FFMPEG_CDN: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm',
+  // Duration input constraints
+  DISPLAY_DURATION_MIN: 0.5,
+  DISPLAY_DURATION_MAX: 10,
+  DISPLAY_DURATION_STEP: 0.5,
+  TRANSITION_DURATION_MIN: 0.1,
+  TRANSITION_DURATION_MAX: 3,
+  TRANSITION_DURATION_STEP: 0.1
 };
 
 export const MESSAGES = {
