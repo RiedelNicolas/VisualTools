@@ -74,17 +74,33 @@ export class SlideshowProcessor {
         inputArgs.push('-i', file);
       }
 
-      await ffmpegManager.execute([
-        ...inputArgs,
-        '-filter_complex', filterComplex,
-        '-map', '[vfinal]',
-        '-c:v', 'libx264',
-        '-pix_fmt', 'yuv420p',
-        '-preset', 'fast',
-        '-movflags', '+faststart',
-        '-y',
-        outputFile
-      ]);
+      // Start a progress simulation as fallback in case FFmpeg progress events don't fire
+      let progressSimulation: NodeJS.Timeout | null = setInterval(() => {
+        const currentProgress = stateManager.getState('progress') as number;
+        if (currentProgress < 85) {
+          // Slowly increment progress from 40% to 85% over time
+          stateManager.setState({ progress: Math.min(85, currentProgress + 1) });
+        }
+      }, 1000);
+
+      try {
+        await ffmpegManager.execute([
+          ...inputArgs,
+          '-filter_complex', filterComplex,
+          '-map', '[vfinal]',
+          '-c:v', 'libx264',
+          '-pix_fmt', 'yuv420p',
+          '-preset', 'fast',
+          '-movflags', '+faststart',
+          '-y',
+          outputFile
+        ]);
+      } finally {
+        if (progressSimulation) {
+          clearInterval(progressSimulation);
+          progressSimulation = null;
+        }
+      }
 
       stateManager.setState({ progress: 90 });
 

@@ -57,14 +57,30 @@ export class ComparisonProcessor {
         throw new Error('Failed to process input files');
       }
 
-      await ffmpegManager.execute([
-        '-i', input0,
-        '-i', input1,
-        '-filter_complex', filterComplex,
-        '-map', '[outv]',
-        '-y',
-        outputFile
-      ]);
+      // Start a progress simulation as fallback in case FFmpeg progress events don't fire
+      let progressSimulation: NodeJS.Timeout | null = setInterval(() => {
+        const currentProgress = stateManager.getState('progress') as number;
+        if (currentProgress < 85) {
+          // Slowly increment progress from 60% to 85% over time
+          stateManager.setState({ progress: Math.min(85, currentProgress + 2) });
+        }
+      }, 500);
+
+      try {
+        await ffmpegManager.execute([
+          '-i', input0,
+          '-i', input1,
+          '-filter_complex', filterComplex,
+          '-map', '[outv]',
+          '-y',
+          outputFile
+        ]);
+      } finally {
+        if (progressSimulation) {
+          clearInterval(progressSimulation);
+          progressSimulation = null;
+        }
+      }
 
       stateManager.setState({ progress: 90 });
 
