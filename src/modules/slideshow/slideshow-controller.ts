@@ -32,6 +32,7 @@ export class SlideshowController {
   private videoEl!: HTMLVideoElement;
   private errorEl!: HTMLElement;
   private processingSpinner!: HTMLElement;
+  private spinnerShown: boolean;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -40,6 +41,7 @@ export class SlideshowController {
     this.unsubscribers = [];
     this.components = {};
     this.videoObjectUrl = null;
+    this.spinnerShown = false;
     this.render();
     this.initComponents();
     this.attachEvents();
@@ -207,7 +209,7 @@ export class SlideshowController {
     // Subscribe to progress changes to show spinner when reaching 100%
     this.unsubscribers.push(
       stateManager.subscribe('progress', (progress) => {
-        if (progress === 100 && stateManager.getState('processing')) {
+        if (progress === 100 && stateManager.getState('processing') && !this.spinnerShown) {
           // Hide progress bar and show spinner when progress reaches 100%
           this.showProcessingSpinner();
         }
@@ -271,6 +273,7 @@ export class SlideshowController {
       const result = await this.processor.process(this.files);
       this.showResult(result);
     } catch (error) {
+      this.hideProcessingSpinner();
       this.showError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       this.generateBtn.disabled = this.files.length < 2;
@@ -319,10 +322,12 @@ export class SlideshowController {
   }
 
   private showProcessingSpinner(): void {
+    this.spinnerShown = true;
     this.processingSpinner.classList.remove('hidden');
   }
 
   private hideProcessingSpinner(): void {
+    this.spinnerShown = false;
     this.processingSpinner.classList.add('hidden');
   }
 

@@ -257,6 +257,7 @@ body {
   width: 100%;
   max-height: 80vh;
   display: block;
+  object-fit: contain;
 }
 
 /* Processing Spinner Container */
