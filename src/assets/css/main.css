@@ -262,6 +262,27 @@ body {
   object-fit: contain;
 }
 
+/* Processing Spinner Container */
+.processing-spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl);
+  margin: var(--spacing-lg) 0;
+}
+
+.processing-spinner-container.hidden {
+  display: none;
+}
+
+.processing-message {
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+
 /* Error Banner */
 .error-banner {
   position: fixed;
