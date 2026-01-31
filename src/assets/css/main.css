@@ -420,8 +420,8 @@ body {
   }
 }
 
-/* Privacy Redactor Tool */
-.privacy-redactor-tool {
+/* Image Obfuscator Tool */
+.image-obfuscator-tool {
   background-color: var(--color-bg-white);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);

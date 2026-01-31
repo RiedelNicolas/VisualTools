@@ -2,7 +2,7 @@ import { eventBus } from '../../core/event-bus.ts';
 import { stateManager } from '../../core/state-manager.ts';
 import { FileUploader } from '../../components/file-uploader.ts';
 import { DownloadButton } from '../../components/download-button.ts';
-import { PrivacyRedactorProcessor, type RedactionRegion, type RedactionEffect } from './privacy-redactor-processor.ts';
+import { ImageObfuscatorProcessor, type ObfuscationRegion, type ObfuscationEffect } from './image-obfuscator-processor.ts';
 import type { UnsubscribeFunction } from '../../types.ts';
 
 interface Components {
@@ -10,9 +10,9 @@ interface Components {
   downloadBtn: DownloadButton;
 }
 
-export class PrivacyRedactorController {
+export class ImageObfuscatorController {
   private container: HTMLElement;
-  private processor: PrivacyRedactorProcessor;
+  private processor: ImageObfuscatorProcessor;
   private file: File | null;
   private unsubscribers: UnsubscribeFunction[];
   private components: Partial<Components>;
@@ -28,17 +28,17 @@ export class PrivacyRedactorController {
   private errorEl!: HTMLElement;
 
   // Drawing state
-  private regions: RedactionRegion[] = [];
+  private regions: ObfuscationRegion[] = [];
   private isDrawing = false;
   private startX = 0;
   private startY = 0;
-  private currentRect: RedactionRegion | null = null;
+  private currentRect: ObfuscationRegion | null = null;
   private imageLoaded = false;
   private loadedImage: HTMLImageElement | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
-    this.processor = new PrivacyRedactorProcessor();
+    this.processor = new ImageObfuscatorProcessor();
     this.file = null;
     this.unsubscribers = [];
     this.components = {};
@@ -49,16 +49,16 @@ export class PrivacyRedactorController {
 
   private render(): void {
     this.container.innerHTML = `
-      <div class="privacy-redactor-tool">
+      <div class="image-obfuscator-tool">
         <div class="tool-header">
-          <h2>Privacy Redactor</h2>
+          <h2>Image Obfuscator</h2>
           <p>Blur or pixelate sensitive information in your images</p>
         </div>
         
         <div class="tool-content">
-          <div id="redactor-uploader"></div>
+          <div id="obfuscator-uploader"></div>
           
-          <div id="redactor-canvas-container" class="canvas-container hidden">
+          <div id="obfuscator-canvas-container" class="canvas-container hidden">
             <div class="canvas-controls">
               <div class="control-group">
                 <label for="effect-selector">Effect:</label>
@@ -68,57 +68,57 @@ export class PrivacyRedactorController {
                 </select>
               </div>
               <div class="control-buttons">
-                <button id="redactor-undo" class="secondary-btn" disabled>
+                <button id="obfuscator-undo" class="secondary-btn" disabled>
                   Undo Last
                 </button>
-                <button id="redactor-clear-regions" class="secondary-btn" disabled>
+                <button id="obfuscator-clear-regions" class="secondary-btn" disabled>
                   Clear All
                 </button>
               </div>
             </div>
             
-            <div id="redactor-instructions" class="instructions">
+            <div id="obfuscator-instructions" class="instructions">
               <span class="instructions-icon">✏️</span>
-              <span>Click and drag to select areas to redact</span>
+              <span>Click and drag to select areas to obfuscate</span>
             </div>
             
             <div class="canvas-wrapper">
-              <canvas id="redactor-canvas"></canvas>
+              <canvas id="obfuscator-canvas"></canvas>
             </div>
           </div>
           
           <div class="tool-actions">
-            <button id="redactor-process" class="primary-btn hidden" disabled>
-              Apply Redaction
+            <button id="obfuscator-process" class="primary-btn hidden" disabled>
+              Apply Obfuscation
             </button>
           </div>
           
-          <div id="redactor-result" class="result-section hidden">
-            <h3>Redacted Image</h3>
+          <div id="obfuscator-result" class="result-section hidden">
+            <h3>Obfuscated Image</h3>
             <div class="result-image-container">
-              <img id="redactor-result-img" src="" alt="Redacted result">
+              <img id="obfuscator-result-img" src="" alt="Obfuscated result">
             </div>
-            <div id="redactor-download"></div>
+            <div id="obfuscator-download"></div>
           </div>
           
-          <div id="redactor-error" class="error-message hidden"></div>
+          <div id="obfuscator-error" class="error-message hidden"></div>
         </div>
       </div>
     `;
 
-    const canvas = this.container.querySelector('#redactor-canvas');
-    const canvasContainer = this.container.querySelector('#redactor-canvas-container');
+    const canvas = this.container.querySelector('#obfuscator-canvas');
+    const canvasContainer = this.container.querySelector('#obfuscator-canvas-container');
     const effectSelector = this.container.querySelector('#effect-selector');
-    const clearBtn = this.container.querySelector('#redactor-clear-regions');
-    const undoBtn = this.container.querySelector('#redactor-undo');
-    const processBtn = this.container.querySelector('#redactor-process');
-    const resultSection = this.container.querySelector('#redactor-result');
-    const resultImg = this.container.querySelector('#redactor-result-img');
-    const errorEl = this.container.querySelector('#redactor-error');
+    const clearBtn = this.container.querySelector('#obfuscator-clear-regions');
+    const undoBtn = this.container.querySelector('#obfuscator-undo');
+    const processBtn = this.container.querySelector('#obfuscator-process');
+    const resultSection = this.container.querySelector('#obfuscator-result');
+    const resultImg = this.container.querySelector('#obfuscator-result-img');
+    const errorEl = this.container.querySelector('#obfuscator-error');
 
     if (!canvas || !canvasContainer || !effectSelector || !clearBtn || !undoBtn || 
         !processBtn || !resultSection || !resultImg || !errorEl) {
-      throw new Error('Failed to initialize privacy redactor controller elements');
+      throw new Error('Failed to initialize image obfuscator controller elements');
     }
 
     this.canvas = canvas as HTMLCanvasElement;
@@ -139,8 +139,8 @@ export class PrivacyRedactorController {
   }
 
   private initComponents(): void {
-    const uploaderContainer = this.container.querySelector('#redactor-uploader');
-    const downloadContainer = this.container.querySelector('#redactor-download');
+    const uploaderContainer = this.container.querySelector('#obfuscator-uploader');
+    const downloadContainer = this.container.querySelector('#obfuscator-download');
 
     if (!uploaderContainer || !downloadContainer) {
       throw new Error('Failed to find component containers');
@@ -151,14 +151,14 @@ export class PrivacyRedactorController {
       {
         maxFiles: 1,
         multiple: false,
-        eventName: 'redactor-file-changed'
+        eventName: 'obfuscator-file-changed'
       }
     );
 
     this.components.downloadBtn = new DownloadButton(
       downloadContainer as HTMLElement,
       {
-        prefix: 'redacted',
+        prefix: 'obfuscated',
         extension: '.png',
         mimeType: 'image/png'
       }
@@ -167,7 +167,7 @@ export class PrivacyRedactorController {
 
   private attachEvents(): void {
     this.unsubscribers.push(
-      eventBus.on<File[]>('redactor-file-changed', (files) => {
+      eventBus.on<File[]>('obfuscator-file-changed', (files) => {
         if (files.length > 0 && files[0]) {
           this.file = files[0];
           this.onFileChanged();
@@ -350,7 +350,7 @@ export class PrivacyRedactorController {
     this.processBtn.disabled = true;
 
     try {
-      const effect = this.effectSelector.value as RedactionEffect;
+      const effect = this.effectSelector.value as ObfuscationEffect;
       
       // Scale regions back to original image size if canvas was scaled
       const scaleX = this.loadedImage!.width / this.canvas.width;
