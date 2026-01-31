@@ -54,3 +54,22 @@ export function validateSlideshowFiles(files: File[]): ValidationResult {
 
   return { valid: true };
 }
+
+export function validateImageGridFiles(files: File[]): ValidationResult {
+  if (files.length < 1) {
+    return { valid: false, error: 'Please upload at least 1 image' };
+  }
+
+  if (files.length > CONFIG.MAX_FILES_SLIDESHOW) {
+    return { valid: false, error: MESSAGES.ERROR_MAX_FILES };
+  }
+
+  for (const file of files) {
+    const result = validateFile(file);
+    if (!result.valid) {
+      return result;
+    }
+  }
+
+  return { valid: true };
+}

@@ -5,7 +5,7 @@ import { ProgressBar } from '../../components/progress-bar.ts';
 import { ImagePreview } from '../../components/image-preview.ts';
 import { DownloadButton } from '../../components/download-button.ts';
 import { ImageGridProcessor } from './image-grid-processor.ts';
-import { validateSlideshowFiles } from '../../utils/validation.ts';
+import { validateImageGridFiles } from '../../utils/validation.ts';
 import type { UnsubscribeFunction } from '../../types.ts';
 
 interface Components {
@@ -187,8 +187,9 @@ export class ImageGridController {
     this.hideError();
     this.hideResult();
 
-    // Validate files (reuse slideshow validation since it allows multiple images)
-    const validation = validateSlideshowFiles(this.files);
+    // Validate files: ensures files are valid image formats (PNG/JPG),
+    // within size limits (50MB each), and count is between 1-20 images
+    const validation = validateImageGridFiles(this.files);
     if (!validation.valid) {
       this.showError(validation.error ?? 'Validation failed');
       return;
