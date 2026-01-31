@@ -3,11 +3,12 @@ import { eventBus } from './core/event-bus.ts';
 import { ComparisonController } from './modules/comparison/comparison-controller.ts';
 import { SlideshowController } from './modules/slideshow/slideshow-controller.ts';
 import { ImageObfuscatorController } from './modules/image-obfuscator/image-obfuscator-controller.ts';
+import { ImageGridController } from './modules/image-grid/image-grid-controller.ts';
 import './assets/css/main.css';
 import './assets/css/components.css';
 import './assets/css/animations.css';
 
-type ToolController = ComparisonController | SlideshowController | ImageObfuscatorController;
+type ToolController = ComparisonController | SlideshowController | ImageObfuscatorController | ImageGridController;
 
 class VisualToolsApp {
   private currentTool: string | null;
@@ -103,7 +104,7 @@ class VisualToolsApp {
     });
 
     this.currentTool = toolName;
-    stateManager.setState({ currentTool: toolName as 'comparison' | 'slideshow' | 'image-obfuscator' });
+    stateManager.setState({ currentTool: toolName as 'comparison' | 'slideshow' | 'image-obfuscator' | 'image-grid' });
     stateManager.reset();
 
     if (toolName === 'comparison') {
@@ -112,6 +113,8 @@ class VisualToolsApp {
       this.toolController = new SlideshowController(this.toolContainer);
     } else if (toolName === 'image-obfuscator') {
       this.toolController = new ImageObfuscatorController(this.toolContainer);
+    } else if (toolName === 'image-grid') {
+      this.toolController = new ImageGridController(this.toolContainer);
     }
 
     eventBus.emit<string>('tool-changed', toolName);
