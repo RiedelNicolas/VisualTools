@@ -25,6 +25,14 @@ Client-side image editing tool to hide sensitive information. Features:
 - Multiple region selection support
 - All processing happens locally in your browser
 
+### 🔲 Image Grid
+Combine multiple images into a single grid layout. Features:
+- Upload 1-20 images
+- Configurable output dimensions (default 1920x1080)
+- Automatic grid layout calculation
+- Images are uniformly scaled and arranged
+- Perfect for creating collages or screenshot compilations
+
 ## Live Demo
 
 Visit [https://riedelnicolas.github.io/VisualTools/](https://riedelnicolas.github.io/VisualTools/)
@@ -85,7 +93,9 @@ visualTools/
 │   │   └── event-bus.js      # Event system
 │   ├── modules/
 │   │   ├── comparison/       # Side-by-side comparison tool
-│   │   └── slideshow/        # Slideshow generator tool
+│   │   ├── slideshow/        # Slideshow generator tool
+│   │   ├── image-obfuscator/ # Image obfuscator tool
+│   │   └── image-grid/       # Image grid tool
 │   ├── components/           # Reusable UI components
 │   ├── utils/                # Utility functions
 │   └── assets/
